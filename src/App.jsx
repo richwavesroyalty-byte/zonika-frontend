@@ -3,7 +3,7 @@ import {
   Radio, Cpu, Activity, Play, Square, RefreshCw, CheckCircle2,
   Boxes, ArrowLeftRight, AlertTriangle, Search, Filter, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
-  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store
+  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin
 } from 'lucide-react';
 import logo from './assets/Logo Zonika.png';
 
@@ -35,9 +35,9 @@ export default function ZonikaApp() {
   // Historial de Recepciones de Muelle
   const [muelleHistorial, setMuelleHistorial] = useState([]);
 
-  // Auditorías y discrepancias (Simulador dinámico)
+  // Auditorías y discrepancias con Ubicación Exacta
   const [discrepancies, setDiscrepancies] = useState([
-    { id: 'DISC-101', sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, cause: 'Posible extravío / Sin etiqueta RFID' },
+    { id: 'DISC-101', sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, location: 'Madefront Ferretería - Estante B3', cause: 'Posible extravío / Sin etiqueta RFID' },
   ]);
 
   // Monitor de Tags
@@ -68,7 +68,6 @@ export default function ZonikaApp() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Selector superior con redirección precisa
   const handleWarehouseChange = (e) => {
     const selected = e.target.value;
     setSelectedWarehouse(selected);
@@ -192,25 +191,23 @@ export default function ZonikaApp() {
     setMuelleItems(prev => prev.map(i => ({ ...i, read: 0, status: 'Pendiente' })));
   };
 
-  // Función Simuladora de Auditoría RFID y Discrepancias
+  // Simulador de Auditoría con Ubicación Específica
   const handleRunAuditSimulation = () => {
-    // Tomamos aleatoriamente un producto de Madefront para simular una diferencia
     const simulatedDiscrepancies = [
-      { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, cause: 'Posible extravío / Sin etiqueta RFID' },
-      { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'INV-001', item: 'Lector Biométrico ZKTeco', expected: 45, rfidCount: 47, diff: +2, cause: 'Sobrante detectado por antena secundaria' },
+      { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, location: 'Madefront Ferretería - Estante B3', cause: 'Posible extravío / Sin etiqueta RFID' },
+      { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'BOD-501', item: 'Taladro Percutor Industrial 800W', expected: 120, rfidCount: 118, diff: -2, location: 'Bodega Principal - Pasillo 3', cause: 'Faltante en conteo de pasillo' },
+      { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'INV-001', item: 'Lector Biométrico ZKTeco', expected: 45, rfidCount: 47, diff: +2, location: 'Madefront Ferretería - Estante A1', cause: 'Sobrante detectado por antena secundaria' },
     ];
     setDiscrepancies(simulatedDiscrepancies);
-    showNotification('🛰️ ¡Auditoría RFID completada! Se analizaron las existencias con éxito.');
+    showNotification('🛰️ ¡Auditoría RFID completada con trazabilidad por ubicación!');
   };
 
-  // Cálculo de métricas dinámicas para el Panel General
   const totalStockMadefront = inventoryMadefront.reduce((acc, item) => acc + Number(item.stock), 0);
   const totalStockBodega = inventoryBodega.reduce((acc, item) => acc + Number(item.stock), 0);
 
   return (
     <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans overflow-hidden">
       
-      {/* Notificación flotante */}
       {notification && (
         <div className="fixed top-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-cyan-300 animate-bounce">
           <CheckCircle2 className="w-5 h-5" />
@@ -253,44 +250,19 @@ export default function ZonikaApp() {
             <div>
               <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Operación & Stock</p>
               <nav className="space-y-1">
-                <button 
-                  onClick={() => setActiveTab('dashboard')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Activity className="w-4 h-4" /> Panel General
                 </button>
-                <button 
-                  onClick={() => setActiveTab('inventory')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('inventory')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Boxes className="w-4 h-4" /> Stock e Inventarios
                 </button>
-                <button 
-                  onClick={() => setActiveTab('historial_muelle')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('historial_muelle')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <ClipboardList className="w-4 h-4" /> Historial de Muelle
                 </button>
-                <button 
-                  onClick={() => setActiveTab('movements')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('movements')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <ArrowLeftRight className="w-4 h-4" /> Entradas y Salidas
                 </button>
-                <button 
-                  onClick={() => setActiveTab('audits')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'audits' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('audits')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'audits' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <ShieldAlert className="w-4 h-4" /> Auditorías & Cuadres
                 </button>
               </nav>
@@ -299,28 +271,13 @@ export default function ZonikaApp() {
             <div>
               <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Herramientas RFID</p>
               <nav className="space-y-1">
-                <button 
-                  onClick={() => setActiveTab('encoder')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('encoder')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Printer className="w-4 h-4" /> Grabación / Impresión Tag
                 </button>
-                <button 
-                  onClick={() => setActiveTab('monitor')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'monitor' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('monitor')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'monitor' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Radio className="w-4 h-4" /> Monitor de Tags (EPC)
                 </button>
-                <button 
-                  onClick={() => setActiveTab('hardware')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'hardware' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('hardware')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'hardware' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Cpu className="w-4 h-4" /> Hardware & Antenas
                 </button>
               </nav>
@@ -329,20 +286,10 @@ export default function ZonikaApp() {
             <div>
               <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Sistema & Analítica</p>
               <nav className="space-y-1">
-                <button 
-                  onClick={() => setActiveTab('reports')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <BarChart3 className="w-4 h-4" /> Reportes & Exportación
                 </button>
-                <button 
-                  onClick={() => setActiveTab('settings')} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'settings' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
+                <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'settings' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Settings className="w-4 h-4" /> Configuración ERP
                 </button>
               </nav>
@@ -359,7 +306,6 @@ export default function ZonikaApp() {
       {/* Contenido Central */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120]">
         
-        {/* Barra Superior */}
         <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 z-20 shadow-md">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">ESTADO:</span>
@@ -383,10 +329,9 @@ export default function ZonikaApp() {
           </button>
         </header>
 
-        {/* Zona Dinámica */}
         <div className="flex-1 overflow-y-auto p-8">
           
-          {/* PANEL GENERAL / DASHBOARD */}
+          {/* DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
@@ -394,7 +339,6 @@ export default function ZonikaApp() {
                 <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión en tiempo real del stock, movimientos y auditorías de la compañía.</p>
               </div>
 
-              {/* Tarjetas de Métricas Dinámicas */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md space-y-2">
                   <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
@@ -429,7 +373,6 @@ export default function ZonikaApp() {
                 </div>
               </div>
 
-              {/* Bloque Inferior: Actividad Reciente */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                 <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
@@ -469,7 +412,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* MUELLE DE CARGA */}
+          {/* MUELLE */}
           {activeTab === 'muelle' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
@@ -755,13 +698,13 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* AUDITORÍAS & DISCREPANCIAS (Con Simulador Interactivo) */}
+          {/* AUDITORÍAS & DISCREPANCIAS (Con Trazabilidad por Ubicación) */}
           {activeTab === 'audits' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-black text-white tracking-tight">Auditorías & Discrepancias RFID</h2>
-                  <p className="text-slate-400 text-xs mt-1 font-medium">Comparativa automática entre el stock teórico del ERP y el conteo físico de antenas.</p>
+                  <p className="text-slate-400 text-xs mt-1 font-medium">Comparativa automática entre el stock teórico del ERP y el conteo físico con ubicación exacta.</p>
                 </div>
                 <button 
                   onClick={handleRunAuditSimulation}
@@ -774,7 +717,7 @@ export default function ZonikaApp() {
               <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <ShieldAlert className="w-4 h-4 text-amber-400" /> Registro de Discrepancias Detectadas
+                    <ShieldAlert className="w-4 h-4 text-amber-400" /> Registro de Discrepancias por Ubicación
                   </h3>
                   <span className="text-xs text-slate-400 font-mono">Total Alertas: {discrepancies.length}</span>
                 </div>
@@ -785,7 +728,8 @@ export default function ZonikaApp() {
                       <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider">
                         <th className="py-3 px-4">ID Auditoría</th>
                         <th className="py-3 px-4">SKU / Producto</th>
-                        <th className="py-3 px-4 text-center">Stock Teórico (ERP)</th>
+                        <th className="py-3 px-4">📍 Ubicación Exacta</th>
+                        <th className="py-3 px-4 text-center">Teórico</th>
                         <th className="py-3 px-4 text-center">RFID Contado</th>
                         <th className="py-3 px-4 text-center">Diferencia</th>
                         <th className="py-3 px-4">Causa Estimada</th>
@@ -796,6 +740,9 @@ export default function ZonikaApp() {
                         <tr key={d.id} className="hover:bg-slate-800/50 transition-colors">
                           <td className="py-3.5 px-4 font-mono text-cyan-400 font-bold">{d.id}</td>
                           <td className="py-3.5 px-4 font-semibold text-white">{d.sku} - {d.item}</td>
+                          <td className="py-3.5 px-4 text-cyan-300 font-bold flex items-center gap-1.5 pt-4">
+                            <MapPin className="w-3.5 h-3.5 shrink-0" /> {d.location}
+                          </td>
                           <td className="py-3.5 px-4 text-center font-bold text-slate-300">{d.expected}</td>
                           <td className="py-3.5 px-4 text-center text-cyan-400 font-bold">{d.rfidCount}</td>
                           <td className="py-3.5 px-4 text-center">
