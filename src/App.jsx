@@ -350,13 +350,10 @@ export default function ZonikaApp() {
       {/* Sidebar */}
       <aside className="w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between p-4 z-10 shrink-0 select-none">
         <div>
-          <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-slate-800/80">
-            <div className="w-10 h-10 bg-[#1E293B] border border-slate-700 rounded-xl flex items-center justify-center p-1 shadow-inner overflow-hidden">
+          {/* Logo Oficial Ocupando el Espacio Principal sin Texto */}
+          <div className="flex items-center justify-center px-2 py-4 mb-6 border-b border-slate-800/80">
+            <div className="w-full h-12 flex items-center justify-center overflow-hidden">
               <img src={logo} alt="Zonika Logo" className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <h1 className="font-black text-lg text-white tracking-wide leading-none">ZONIKA</h1>
-              <p className="text-[10px] text-cyan-400 font-semibold tracking-widest uppercase mt-0.5">RFID Enterprise</p>
             </div>
           </div>
 
@@ -637,7 +634,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* HISTORIAL DE MUELLE (Con opción de Borrar) */}
+          {/* HISTORIAL DE MUELLE */}
           {activeTab === 'historial_muelle' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-center">
@@ -707,7 +704,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* INVENTARIOS (Con opción de Borrar) */}
+          {/* INVENTARIOS */}
           {activeTab === 'inventory' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-end">
@@ -803,7 +800,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* MOVIMIENTOS (Con opción de Borrar) */}
+          {/* MOVIMIENTOS */}
           {activeTab === 'movements' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
@@ -935,7 +932,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* MÓDULO GRABACIÓN / IMPRESIÓN DE TAGS (Con opción de Borrar) */}
+          {/* MÓDULO GRABACIÓN / IMPRESIÓN DE TAGS */}
           {activeTab === 'encoder' && (
             <div className="space-y-6 max-w-5xl mx-auto">
               <div>
