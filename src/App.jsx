@@ -210,7 +210,7 @@ export default function ZonikaApp() {
 
   const hasAccess = (moduleKey) => {
     if (!currentUser) return false;
-    if (currentUser.roleKey === 'admin') return true; // Administrador tiene acceso absoluto a todo
+    if (currentUser.roleKey === 'admin') return true;
 
     const rolePermissions = {
       muelle: ['muelle', 'historial_muelle', 'monitor'],
@@ -303,7 +303,6 @@ export default function ZonikaApp() {
             <button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs py-3.5 rounded-xl uppercase tracking-wider shadow-lg transition-all">Iniciar Sesión</button>
           </form>
 
-          {/* Botones de Acceso Rápido con 1 Clic */}
           <div className="border-t border-slate-800 pt-4 space-y-2">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Acceso Rápido con 1 Clic:</p>
             <div className="grid grid-cols-3 gap-2">
@@ -326,7 +325,6 @@ export default function ZonikaApp() {
         </div>
       )}
 
-      {/* Modal Desglose Operador */}
       {selectedOperatorDetails && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-xl p-6 shadow-2xl space-y-4">
@@ -346,7 +344,6 @@ export default function ZonikaApp() {
         </div>
       )}
 
-      {/* Sidebar Completo con Permisos */}
       <aside className="w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between p-4 z-10 shrink-0">
         <div>
           <div className="flex items-center gap-3 px-2 py-4 mb-5 border-b border-slate-800">
@@ -412,7 +409,6 @@ export default function ZonikaApp() {
 
         <div className="flex-1 overflow-y-auto p-8">
           
-          {/* DASHBOARD COMMAND CENTER */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6 max-w-6xl mx-auto pb-12">
               <div>
@@ -492,7 +488,6 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* INVENTARIOS */}
           {activeTab === 'inventory' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-end">
@@ -552,7 +547,6 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* RECEPCIÓN EN MUELLE */}
           {activeTab === 'muelle' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
@@ -575,7 +569,6 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* HISTORIAL DE MUELLE */}
           {activeTab === 'historial_muelle' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-center">
@@ -623,7 +616,6 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* MOVIMIENTOS */}
           {activeTab === 'movements' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <h2 className="text-2xl font-black text-white tracking-tight">Registro de Entradas y Salidas</h2>
@@ -666,7 +658,6 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* GRABACIÓN TAGS */}
           {activeTab === 'encoder' && (
             <div className="space-y-6 max-w-5xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
               <h2 className="text-xl font-black text-white uppercase tracking-wider">Grabación e Impresión de Tags RFID</h2>
@@ -674,7 +665,6 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* REPORTES & ANALÍTICA */}
           {activeTab === 'reports' && (
             <div className="space-y-8 max-w-6xl mx-auto pb-12">
               <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl flex justify-between items-center">
@@ -688,7 +678,6 @@ export default function ZonikaApp() {
                 </div>
               </div>
 
-              {/* Tiempos de Ciclo Logístico (Lead Time) en Muelle */}
               <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
                 <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
                   <Clock className="w-4 h-4 text-cyan-400" />
@@ -726,7 +715,6 @@ export default function ZonikaApp() {
                 </div>
               </div>
 
-              {/* Productividad y Pronóstico */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
                   <div className="flex justify-between items-center border-b border-slate-700/80 pb-3">
