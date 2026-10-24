@@ -4,7 +4,8 @@ import {
   Boxes, ArrowLeftRight, AlertTriangle, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
   Trash2, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin,
-  Lock, Mail, LogOut, Shield, TrendingUp, TrendingDown, Sparkles
+  Lock, Mail, LogOut, Shield, TrendingUp, TrendingDown, Sparkles, Download, FileText,
+  Calendar, Clock, UserCheck, AlertOctagon, Filter
 } from 'lucide-react';
 import logoIsotipo from './assets/Logo Isotipo.png';
 
@@ -22,6 +23,10 @@ export default function ZonikaApp() {
   const [selectedWarehouse, setSelectedWarehouse] = useState('Muelle de Carga & Despachos');
   const [inventorySubTab, setInventorySubTab] = useState('madefront');
   const [notification, setNotification] = useState(null);
+
+  // Estados para Filtros Avanzados de Reportes
+  const [reportDateRange, setReportDateRange] = useState('month');
+  const [reportWarehouseFilter, setReportWarehouseFilter] = useState('all');
 
   useEffect(() => {
     if (currentUser) {
@@ -78,12 +83,29 @@ export default function ZonikaApp() {
     { id: 1, epc: 'E280689400004001F82B', item: 'Lector Biométrico ZKTeco', ant: 'Muelle - Puerta Principal', rssi: '-54 dBm', time: 'Hace 2s' },
   ]);
 
-  // Datos simulados de rendimiento de ventas para la IA y métricas del Admin
   const [productSalesPerformance] = useState([
     { id: 'INV-001', name: 'Lector Biométrico ZKTeco', category: 'Seguridad', velocity: 'Alta', percentage: 88, trend: 'up', statusColor: 'bg-emerald-500' },
     { id: 'BOD-501', name: 'Taladro Percutor Industrial 800W', category: 'Herramientas', velocity: 'Alta', percentage: 76, trend: 'up', statusColor: 'bg-emerald-500' },
     { id: 'INV-002', name: 'Cámara IP Domo 4K', category: 'CCTV', velocity: 'Media', percentage: 45, trend: 'stable', statusColor: 'bg-cyan-500' },
     { id: 'BOD-502', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', velocity: 'Baja (Estancado)', percentage: 15, trend: 'down', statusColor: 'bg-amber-500' },
+  ]);
+
+  // Datos simulados para las nuevas 5 herramientas gerenciales
+  const [operatorProductivity] = useState([
+    { name: 'Juan Pérez', role: 'Operador de Muelle', tasksCompleted: 42, efficiency: '96%', status: 'Excelente' },
+    { name: 'Sonia Gómez', role: 'Encargada de Inventario', tasksCompleted: 38, efficiency: '92%', status: 'Óptimo' },
+    { name: 'Carlos Mendoza', role: 'Administrador (Gerente)', tasksCompleted: 65, efficiency: '99%', status: 'Sobresaliente' },
+  ]);
+
+  const [cycleTimes] = useState([
+    { truckId: 'REC-892', plate: 'SGT-881', provider: 'Ferretería Mayorista SAS', arrivalTime: '09:00 a.m.', scanTime: '09:15 a.m.', leadTime: '15 Minutos', status: 'Rápido' },
+    { truckId: 'REC-304', plate: 'WXYZ-12', provider: 'Seguridad Global Andina', arrivalTime: '02:00 p.m.', scanTime: '02:40 p.m.', leadTime: '40 Minutos', status: 'Revisión Manual' },
+  ]);
+
+  const [stockoutForecast] = useState([
+    { sku: 'INV-002', name: 'Cámara IP Domo 4K', currentStock: 12, dailyConsumption: 3, daysLeft: 4, risk: 'CRÍTICO (Reordenar ya)' },
+    { sku: 'INV-001', name: 'Lector Biométrico ZKTeco', currentStock: 45, dailyConsumption: 5, daysLeft: 9, risk: 'Moderado' },
+    { sku: 'BOD-501', name: 'Taladro Percutor Industrial 800W', currentStock: 120, dailyConsumption: 8, daysLeft: 15, risk: 'Saludable' },
   ]);
 
   const [muelleForm, setMuelleForm] = useState({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
@@ -578,12 +600,12 @@ export default function ZonikaApp() {
 
         <div className="flex-1 overflow-y-auto p-8">
           
-          {/* DASHBOARD CON TABLA DE ROTACIÓN Y ALERTAS DE IA */}
+          {/* DASHBOARD */}
           {activeTab === 'dashboard' && hasAccess('dashboard') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Panel General de Inventarios</h2>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión gerencial del stock, rotación de ventas y analítica predictiva.</p>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión gerencial en tiempo real del stock, movimientos y auditorías.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
@@ -620,89 +642,19 @@ export default function ZonikaApp() {
                 </div>
               </div>
 
-              {/* NUEVA SECCIÓN: TABLA DE ROTACIÓN Y RENDIMIENTO DE VENTAS CON BARRAS DE COLORES (IA READY) */}
-              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                      <BarChart3 className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Rendimiento de Ventas & Rotación de Productos</h3>
-                      <p className="text-[11px] text-slate-400">Analítica de velocidad de salida y demanda para la toma de decisiones gerenciales.</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded-full font-bold flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" /> Zonika AI Ready
-                  </span>
+              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-cyan-400" /> Centro de Analítica & Inteligencia Gerencial
+                  </h3>
+                  <p className="text-xs text-slate-400">Accede al módulo de reportes para consultar rotación, mermas, tiempos de ciclo, rendimiento y pronóstico de stock.</p>
                 </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-900/40">
-                        <th className="py-3 px-4">SKU / Producto</th>
-                        <th className="py-3 px-4">Categoría</th>
-                        <th className="py-3 px-4">Demanda / Velocidad</th>
-                        <th className="py-3 px-4 w-52">Porcentaje de Venta / Rotación</th>
-                        <th className="py-3 px-4 text-center">Tendencia IA</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
-                      {productSalesPerformance.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
-                          <td className="py-3.5 px-4 font-semibold text-white">
-                            <span className="font-mono text-cyan-400 mr-2">{item.id}</span> {item.name}
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-400">{item.category}</td>
-                          <td className="py-3.5 px-4">
-                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${
-                              item.velocity === 'Alta' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
-                              item.velocity === 'Media' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' :
-                              'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            }`}>
-                              {item.velocity}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] font-mono font-bold text-slate-300">
-                                <span>{item.percentage}% del objetivo</span>
-                              </div>
-                              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700/60">
-                                <div 
-                                  className={`h-full rounded-full ${item.statusColor} transition-all duration-500`} 
-                                  style={{ width: `${item.percentage}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4 text-center">
-                            {item.trend === 'up' && <TrendingUp className="w-4 h-4 text-emerald-400 mx-auto" title="Tendencia al alza" />}
-                            {item.trend === 'stable' && <Activity className="w-4 h-4 text-cyan-400 mx-auto" title="Demanda estable" />}
-                            {item.trend === 'down' && <TrendingDown className="w-4 h-4 text-amber-400 mx-auto" title="Baja rotación / Alerta" />}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* ALERTA PREDICTIVA DE IA SIMULADA */}
-                <div className="bg-gradient-to-r from-amber-500/10 via-cyan-500/5 to-emerald-500/10 border border-cyan-500/30 p-4 rounded-xl flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-white flex items-center gap-2">
-                      Zonika AI — Análisis Predictivo de Stock:
-                    </p>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      El producto <strong className="text-amber-400">Etiqueta RFID UHF Zebra (BOD-502)</strong> presenta baja rotación (18%). Se recomienda programar una campaña de promoción o reasignar stock antes de generar sobrecostos de almacenamiento en la Bodega Principal.
-                    </p>
-                  </div>
-                </div>
-
+                <button 
+                  onClick={() => setActiveTab('reports')}
+                  className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg transition-all shrink-0"
+                >
+                  Abrir Módulo de Reportes &rarr;
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
@@ -1296,12 +1248,256 @@ export default function ZonikaApp() {
             </div>
           )}
 
+          {/* MÓDULO DE REPORTES & EXPORTACIÓN CON LAS 5 HERRAMIENTAS ENTERPRISE */}
           {activeTab === 'reports' && hasAccess('reports') && (
-            <div className="space-y-6 max-w-6xl mx-auto">
-              <h2 className="text-2xl font-black text-white tracking-tight">Reportes & Exportación</h2>
-              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl">
-                <p className="text-xs text-slate-400">Exporta historiales de inventario y lecturas RFID a Excel o CSV.</p>
+            <div className="space-y-8 max-w-6xl mx-auto pb-12">
+              
+              {/* ENCABEZADO Y FILTROS AVANZADOS (Herramienta 1) */}
+              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h2 className="text-2xl font-black text-white tracking-tight">Centro de Reportes & Analítica Gerencial</h2>
+                    <p className="text-slate-400 text-xs mt-1 font-medium">Informe consolidado con inteligencia artificial, mermas, tiempos de ciclo y pronósticos de stock.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => showNotification('📊 Exportando reporte ejecutivo completo a Excel (.xlsx)...')}
+                      className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all"
+                    >
+                      <Download className="w-4 h-4" /> Exportar Excel
+                    </button>
+                    <button 
+                      onClick={() => showNotification('📄 Generando documento PDF ejecutivo...')}
+                      className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all"
+                    >
+                      <FileText className="w-4 h-4" /> Exportar PDF
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-700/80 pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 bg-[#0F172A] border border-slate-800 p-3 rounded-xl">
+                    <Calendar className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <div className="w-full">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block">Rango de Fechas</label>
+                      <select value={reportDateRange} onChange={(e)=>setReportDateRange(e.target.value)} className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer mt-0.5">
+                        <option value="today" className="bg-slate-900">Hoy (Corte Diario)</option>
+                        <option value="week" className="bg-slate-900">Esta Semana</option>
+                        <option value="month" className="bg-slate-900">Este Mes (Actual)</option>
+                        <option value="custom" className="bg-slate-900">Personalizado</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-[#0F172A] border border-slate-800 p-3 rounded-xl">
+                    <Filter className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <div className="w-full">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block">Filtrar por Sede / Almacén</label>
+                      <select value={reportWarehouseFilter} onChange={(e)=>setReportWarehouseFilter(e.target.value)} className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer mt-0.5">
+                        <option value="all" className="bg-slate-900">Todas las Sedes (Consolidado)</option>
+                        <option value="madefront" className="bg-slate-900">Madefront Ferretería</option>
+                        <option value="bodega" className="bg-slate-900">Bodega Principal</option>
+                        <option value="muelle" className="bg-slate-900">Muelle de Carga</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* MATRIZ DE ROTACIÓN Y RENDIMIENTO DE VENTAS CON IA */}
+              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                      <BarChart3 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Matriz de Rotación de Inventario & Demanda</h3>
+                      <p className="text-[11px] text-slate-400">Productos con mayor y menor salida en las sedes de Zonika.</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded-full font-bold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Zonika AI Powered
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-900/40">
+                        <th className="py-3 px-4">SKU / Producto</th>
+                        <th className="py-3 px-4">Categoría</th>
+                        <th className="py-3 px-4">Demanda / Velocidad</th>
+                        <th className="py-3 px-4 w-52">Porcentaje de Venta / Rotación</th>
+                        <th className="py-3 px-4 text-center">Tendencia IA</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
+                      {productSalesPerformance.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3.5 px-4 font-semibold text-white">
+                            <span className="font-mono text-cyan-400 mr-2">{item.id}</span> {item.name}
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-400">{item.category}</td>
+                          <td className="py-3.5 px-4">
+                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${
+                              item.velocity === 'Alta' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                              item.velocity === 'Media' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' :
+                              'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                            }`}>
+                              {item.velocity}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-mono font-bold text-slate-300">
+                                <span>{item.percentage}% del objetivo</span>
+                              </div>
+                              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700/60">
+                                <div 
+                                  className={`h-full rounded-full ${item.statusColor} transition-all duration-500`} 
+                                  style={{ width: `${item.percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            {item.trend === 'up' && <TrendingUp className="w-4 h-4 text-emerald-400 mx-auto" title="Tendencia al alza" />}
+                            {item.trend === 'stable' && <Activity className="w-4 h-4 text-cyan-400 mx-auto" title="Demanda estable" />}
+                            {item.trend === 'down' && <TrendingDown className="w-4 h-4 text-amber-400 mx-auto" title="Baja rotación / Alerta" />}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="bg-gradient-to-r from-amber-500/10 via-cyan-500/5 to-emerald-500/10 border border-cyan-500/30 p-4 rounded-xl flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-white flex items-center gap-2">
+                      Zonika AI — Recomendación Gerencial para Reporte:
+                    </p>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      El análisis de rotación indica que los lectores biométricos y taladros percutores lideran la demanda (75%-88%). Por el contrario, el stock de <strong className="text-amber-400">Etiqueta RFID UHF Zebra (BOD-502)</strong> muestra una rotación inferior al 20%. Se aconseja adjuntar este reporte en la próxima revisión de compras a proveedores.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* GRID CON LAS NUEVAS 4 HERRAMIENTAS ENTERPRISE */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* 1. Historial de Mermas y Discrepancias */}
+                <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+                  <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                      <AlertOctagon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Historial de Mermas & Discrepancias</h3>
+                      <p className="text-[10px] text-slate-400">Pérdidas detectadas por conteo RFID vs Teórico</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2.5">
+                    {discrepancies.map((d) => (
+                      <div key={d.id} className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+                        <div className="flex justify-between font-bold">
+                          <span className="text-cyan-400">{d.sku} - {d.item}</span>
+                          <span className="text-amber-400">{d.diff} unidades</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400">Ubicación: {d.location}</p>
+                        <p className="text-[10px] text-slate-500 italic">Causa: {d.cause}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Productividad y Desempeño por Operador */}
+                <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+                  <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                      <UserCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Productividad por Operador</h3>
+                      <p className="text-[10px] text-slate-400">Eficiencia y tareas procesadas en el sistema</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2.5">
+                    {operatorProductivity.map((op, idx) => (
+                      <div key={idx} className="flex justify-between items-center bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs">
+                        <div>
+                          <span className="text-white font-semibold block">{op.name}</span>
+                          <span className="text-[10px] text-slate-400">{op.role} • {op.tasksCompleted} tareas</span>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          {op.efficiency} Eficiencia
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Tiempos de Ciclo Logístico (Lead Time) */}
+                <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+                  <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Tiempos de Ciclo Logístico (Muelle)</h3>
+                      <p className="text-[10px] text-slate-400">Duración desde la llegada del camión hasta el escaneo RFID</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2.5">
+                    {cycleTimes.map((ct, idx) => (
+                      <div key={idx} className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+                        <div className="flex justify-between font-bold">
+                          <span className="text-emerald-400">Placa: {ct.plate}</span>
+                          <span className="text-cyan-400 font-mono">{ct.leadTime}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400">Proveedor: {ct.provider}</p>
+                        <p className="text-[10px] text-slate-500">Llegada: {ct.arrivalTime} → Escaneo: {ct.scanTime}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Pronóstico de Quiebre de Stock (Stockout Forecast) */}
+                <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+                  <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
+                    <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Pronóstico de Quiebre de Stock</h3>
+                      <p className="text-[10px] text-slate-400">Días estimados antes de agotar existencias</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2.5">
+                    {stockoutForecast.map((sf, idx) => (
+                      <div key={idx} className="flex justify-between items-center bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs">
+                        <div>
+                          <span className="text-white font-semibold block">{sf.name}</span>
+                          <span className="text-[10px] text-slate-400">Stock actual: {sf.currentStock} un • Gasto: {sf.dailyConsumption}/día</span>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${
+                          sf.daysLeft <= 5 ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+                          sf.daysLeft <= 10 ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                          'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        }`}>
+                          {sf.daysLeft} días restantes
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
             </div>
           )}
 
