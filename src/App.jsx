@@ -5,7 +5,7 @@ import {
   Printer, BarChart3, Settings, ShieldAlert, Building2,
   Trash2, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin,
   Lock, Mail, LogOut, Shield, TrendingUp, TrendingDown, Sparkles, Download, FileText,
-  Calendar, Clock, UserCheck, AlertOctagon, Filter, X, Eye
+  Calendar, Clock, UserCheck, AlertOctagon, Filter, X, Eye, RefreshCw
 } from 'lucide-react';
 import logoIsotipo from './assets/Logo Isotipo.png';
 
@@ -24,11 +24,27 @@ export default function ZonikaApp() {
   const [inventorySubTab, setInventorySubTab] = useState('madefront');
   const [notification, setNotification] = useState(null);
 
-  // Estados para Filtros Avanzados de Reportes y Operadores por Fecha
+  // Estados para Gráfica en Tiempo Real y Panel General Interactivo
+  const [liveActivityFlow, setLiveActivityFlow] = useState([15, 28, 42, 35, 60, 50, 75]);
+  const [selectedOperatorDate, setSelectedOperatorDate] = useState('2026-10-24');
+  const [selectedOperatorDetails, setSelectedOperatorDetails] = useState(null);
+
   const [reportDateRange, setReportDateRange] = useState('month');
   const [reportWarehouseFilter, setReportWarehouseFilter] = useState('all');
-  const [selectedOperatorDate, setSelectedOperatorDate] = useState('2026-10-24'); // Fecha actual por defecto
-  const [selectedOperatorDetails, setSelectedOperatorDetails] = useState(null);
+
+  // Simulación de actividad en tiempo real cuando el botón RFID está activo
+  useEffect(() => {
+    let interval;
+    if (isReading) {
+      interval = setInterval(() => {
+        setLiveActivityFlow(prev => {
+          const nextVal = Math.floor(40 + Math.random() * 60);
+          return [...prev.slice(1), nextVal];
+        });
+      }, 1200);
+    }
+    return () => clearInterval(interval);
+  }, [isReading]);
 
   useEffect(() => {
     if (currentUser) {
@@ -92,7 +108,6 @@ export default function ZonikaApp() {
     { id: 'BOD-502', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', velocity: 'Baja (Estancado)', percentage: 15, trend: 'down', statusColor: 'bg-amber-500' },
   ]);
 
-  // Base de datos histórica simulada por Fecha para la Productividad de Operadores
   const historicalOperatorData = {
     '2026-10-24': [
       { 
@@ -718,14 +733,20 @@ export default function ZonikaApp() {
 
         <div className="flex-1 overflow-y-auto p-8">
           
-          {/* DASHBOARD */}
+          {/* PANEL GENERAL COMMAND CENTER 360° COMPLETO */}
           {activeTab === 'dashboard' && hasAccess('dashboard') && (
-            <div className="space-y-6 max-w-6xl mx-auto">
-              <div>
-                <h2 className="text-2xl font-black text-white tracking-tight">Panel General de Inventarios</h2>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión gerencial en tiempo real del stock, movimientos y auditorías.</p>
+            <div className="space-y-6 max-w-6xl mx-auto pb-12">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-black text-white tracking-tight">Centro de Control General (Command Center)</h2>
+                  <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión gerencial en tiempo real de antenas, stock, flujos RFID y alertas de mermas.</p>
+                </div>
+                <button onClick={() => setActiveTab('reports')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all">
+                  Ver Analítica &rarr;
+                </button>
               </div>
 
+              {/* TARJETAS SUPERIORES */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md space-y-2">
                   <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
@@ -760,22 +781,125 @@ export default function ZonikaApp() {
                 </div>
               </div>
 
-              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-cyan-400" /> Centro de Analítica & Inteligencia Gerencial
-                  </h3>
-                  <p className="text-xs text-slate-400">Accede al módulo de reportes para consultar rotación, mermas, tiempos de ciclo, rendimiento y pronóstico de stock.</p>
+              {/* SECCIÓN DE GRÁFICA EN VIVO & ESTADO DE HARDWARE */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                {/* GRÁFICA DE FLUJO RFID EN TIEMPO REAL */}
+                <div className="md:col-span-2 bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <Radio className="w-4 h-4 text-cyan-400 animate-pulse" /> Flujo de Lecturas RFID por Minuto (En Vivo)
+                    </h3>
+                    <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-2.5 py-1 rounded-full font-bold">
+                      {isReading ? '🔴 Transmitiendo' : '⏸️ En Pausa'}
+                    </span>
+                  </div>
+
+                  <div className="h-36 flex items-end gap-3 pt-6 px-2 bg-[#0F172A] border border-slate-800 rounded-xl">
+                    {liveActivityFlow.map((val, idx) => (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                        <span className="text-[9px] font-mono text-cyan-400">{val}</span>
+                        <div 
+                          className="w-full bg-gradient-to-t from-cyan-600 to-cyan-400 rounded-t-md transition-all duration-500" 
+                          style={{ height: `${val}%` }}
+                        ></div>
+                        <span className="text-[9px] text-slate-500 font-mono">m{idx+1}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <button 
-                  onClick={() => setActiveTab('reports')}
-                  className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg transition-all shrink-0"
-                >
-                  Abrir Módulo de Reportes &rarr;
-                </button>
+
+                {/* ESTADO DE ANTENAS Y HARDWARE EN TIEMPO REAL */}
+                <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4 flex flex-col justify-between">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-cyan-400" /> Estado de Antenas & Hardware
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs">
+                      <div>
+                        <span className="text-white font-bold block">Zebra FX9600 (Muelle)</span>
+                        <span className="text-[10px] text-slate-400">IP: 192.168.1.150</span>
+                      </div>
+                      <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">ONLINE</span>
+                    </div>
+
+                    <div className="flex justify-between items-center bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs">
+                      <div>
+                        <span className="text-white font-bold block">Chainway C66 (Handheld)</span>
+                        <span className="text-[10px] text-slate-400">Modo: Móvil RFID</span>
+                      </div>
+                      <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">ONLINE</span>
+                    </div>
+
+                    <button 
+                      onClick={() => showNotification('🔄 Conexión con middleware y antenas restablecida con éxito.')}
+                      className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold p-2.5 rounded-xl border border-slate-700 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-cyan-400" /> Reiniciar Enlace Hardware
+                    </button>
+                  </div>
+                </div>
+
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+              {/* SECCIÓN INFERIOR: ÚLTIMAS ALERTAS Y ACCESOS RÁPIDOS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* ALERTAS ACTIVAS DE MERMAS */}
+                <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-400" /> Alertas Críticas Recientes
+                  </h3>
+                  <div className="space-y-2">
+                    {discrepancies.map((d) => (
+                      <div key={d.id} className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs flex justify-between items-center">
+                        <div>
+                          <span className="text-amber-400 font-bold block">{d.sku} - {d.item}</span>
+                          <span className="text-[10px] text-slate-400">Ubicación: {d.location} ({d.diff} un)</span>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setDiscrepancies(prev => prev.filter(item => item.id !== d.id));
+                            showNotification('✅ Alerta marcada como resuelta.');
+                          }}
+                          className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          Resolver
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ACCESOS DIRECTOS GERENCIALES */}
+                <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-cyan-400" /> Accesos Rápidos del ERP
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => setActiveTab('muelle')} className="bg-[#0F172A] hover:bg-slate-800 border border-slate-700/80 p-3.5 rounded-xl text-xs font-bold text-white flex items-center gap-2.5 transition-colors">
+                      <Truck className="w-4 h-4 text-cyan-400" /> Recepción Muelle
+                    </button>
+                    <button onClick={() => setActiveTab('inventory')} className="bg-[#0F172A] hover:bg-slate-800 border border-slate-700/80 p-3.5 rounded-xl text-xs font-bold text-white flex items-center gap-2.5 transition-colors">
+                      <Boxes className="w-4 h-4 text-cyan-400" /> Stock Almacenes
+                    </button>
+                    <button onClick={() => {
+                      setDiscrepancies(prev => [...prev, { id: 'DISC-' + Math.floor(100+Math.random()*900), sku: 'INV-005', item: 'Cerradura Biométrica', expected: 10, rfidCount: 8, diff: -2, location: 'Madefront - Estante D4', cause: 'Verificación manual requerida' }]);
+                      showNotification('⚠️ Alerta de prueba generada.');
+                    }} className="bg-[#0F172A] hover:bg-slate-800 border border-slate-700/80 p-3.5 rounded-xl text-xs font-bold text-white flex items-center gap-2.5 transition-colors">
+                      <ShieldAlert className="w-4 h-4 text-amber-400" /> Simular Alerta
+                    </button>
+                    <button onClick={() => setActiveTab('reports')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 p-3.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-colors">
+                      <BarChart3 className="w-4 h-4" /> Reportes 360°
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* ÚLTIMOS MOVIMIENTOS EN SISTEMA Y ESTADO DE RED */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
                     <ClipboardList className="w-4 h-4 text-cyan-400" /> Últimos Movimientos en Sistema
@@ -811,10 +935,11 @@ export default function ZonikaApp() {
                   </div>
                 </div>
               </div>
+
             </div>
           )}
 
-          {/* MUELLE */}
+          {/* RECEPCIÓN EN MUELLE */}
           {activeTab === 'muelle' && hasAccess('muelle') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
@@ -1322,6 +1447,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
+          {/* MONITOR RFID */}
           {activeTab === 'monitor' && hasAccess('monitor') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <h2 className="text-2xl font-black text-white tracking-tight">Monitor de Lectura de EPCs</h2>
@@ -1344,6 +1470,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
+          {/* HARDWARE */}
           {activeTab === 'hardware' && hasAccess('hardware') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <h2 className="text-2xl font-black text-white tracking-tight">Hardware & Antenas Conectadas</h2>
@@ -1366,11 +1493,9 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* MÓDULO DE REPORTES & EXPORTACIÓN CON HISTÓRICO DIARIO DE OPERADORES */}
+          {/* REPORTES Y EXPORTACIÓN */}
           {activeTab === 'reports' && hasAccess('reports') && (
             <div className="space-y-8 max-w-6xl mx-auto pb-12">
-              
-              {/* ENCABEZADO Y FILTROS AVANZADOS */}
               <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
@@ -1422,7 +1547,7 @@ export default function ZonikaApp() {
                 </div>
               </div>
 
-              {/* MATRIZ DE ROTACIÓN Y RENDIMIENTO DE VENTAS CON IA */}
+              {/* MATRIZ DE ROTACIÓN */}
               <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
@@ -1489,26 +1614,10 @@ export default function ZonikaApp() {
                     </tbody>
                   </table>
                 </div>
-
-                <div className="bg-gradient-to-r from-amber-500/10 via-cyan-500/5 to-emerald-500/10 border border-cyan-500/30 p-4 rounded-xl flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-white flex items-center gap-2">
-                      Zonika AI — Recomendación Gerencial para Reporte:
-                    </p>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      El análisis de rotación indica que los lectores biométricos y taladros percutores lideran la demanda (75%-88%). Por el contrario, el stock de <strong className="text-amber-400">Etiqueta RFID UHF Zebra (BOD-502)</strong> muestra una rotación inferior al 20%. Se aconseja adjuntar este reporte en la próxima revisión de compras a proveedores.
-                    </p>
-                  </div>
-                </div>
               </div>
 
-              {/* GRID CON LAS HERRAMIENTAS ENTERPRISE */}
+              {/* PRODUCTIVIDAD POR OPERADOR & DERECHOS HISTÓRICOS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* 1. Productividad por Operador (CON SELECTOR DE FECHA HISTÓRICA) */}
                 <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-700/80 pb-3 gap-3">
                     <div className="flex items-center gap-3">
@@ -1521,7 +1630,6 @@ export default function ZonikaApp() {
                       </div>
                     </div>
                     
-                    {/* Selector de Fecha Específica para Operadores */}
                     <div className="bg-[#0F172A] border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2">
                       <Calendar className="w-3.5 h-3.5 text-cyan-400" />
                       <select 
@@ -1562,7 +1670,6 @@ export default function ZonikaApp() {
                   </div>
                 </div>
 
-                {/* 2. Historial de Mermas y Discrepancias */}
                 <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
                   <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
                     <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
@@ -1586,67 +1693,11 @@ export default function ZonikaApp() {
                     ))}
                   </div>
                 </div>
-
-                {/* 3. Tiempos de Ciclo Logístico (Lead Time) */}
-                <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
-                  <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
-                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Tiempos de Ciclo Logístico (Muelle)</h3>
-                      <p className="text-[10px] text-slate-400">Duración desde la llegada del camión hasta el escaneo RFID</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2.5">
-                    {cycleTimes.map((ct, idx) => (
-                      <div key={idx} className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs space-y-1">
-                        <div className="flex justify-between font-bold">
-                          <span className="text-emerald-400">Placa: {ct.plate}</span>
-                          <span className="text-cyan-400 font-mono">{ct.leadTime}</span>
-                        </div>
-                        <p className="text-[10px] text-slate-400">Proveedor: {ct.provider}</p>
-                        <p className="text-[10px] text-slate-500">Llegada: {ct.arrivalTime} → Escaneo: {ct.scanTime}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. Pronóstico de Quiebre de Stock (Stockout Forecast) */}
-                <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
-                  <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
-                    <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
-                      <AlertTriangle className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Pronóstico de Quiebre de Stock</h3>
-                      <p className="text-[10px] text-slate-400">Días estimados antes de agotar existencias</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2.5">
-                    {stockoutForecast.map((sf, idx) => (
-                      <div key={idx} className="flex justify-between items-center bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs">
-                        <div>
-                          <span className="text-white font-semibold block">{sf.name}</span>
-                          <span className="text-[10px] text-slate-400">Stock actual: {sf.currentStock} un • Gasto: {sf.dailyConsumption}/día</span>
-                        </div>
-                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${
-                          sf.daysLeft <= 5 ? 'bg-red-500/10 text-red-400 border-red-500/30' :
-                          sf.daysLeft <= 10 ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
-                          'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        }`}>
-                          {sf.daysLeft} días restantes
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
               </div>
-
             </div>
           )}
 
+          {/* CONFIGURACIÓN */}
           {activeTab === 'settings' && hasAccess('settings') && (
             <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
               <h2 className="text-xl font-black text-white uppercase tracking-wider">Configuración ERP y Middleware</h2>
@@ -1656,7 +1707,6 @@ export default function ZonikaApp() {
 
         </div>
       </main>
-
     </div>
   );
 }
