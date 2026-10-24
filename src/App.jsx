@@ -24,9 +24,10 @@ export default function ZonikaApp() {
   const [inventorySubTab, setInventorySubTab] = useState('madefront');
   const [notification, setNotification] = useState(null);
 
-  // Estados para Filtros Avanzados de Reportes y Modal de Operador
+  // Estados para Filtros Avanzados de Reportes y Operadores por Fecha
   const [reportDateRange, setReportDateRange] = useState('month');
   const [reportWarehouseFilter, setReportWarehouseFilter] = useState('all');
+  const [selectedOperatorDate, setSelectedOperatorDate] = useState('2026-10-24'); // Fecha actual por defecto
   const [selectedOperatorDetails, setSelectedOperatorDetails] = useState(null);
 
   useEffect(() => {
@@ -91,50 +92,66 @@ export default function ZonikaApp() {
     { id: 'BOD-502', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', velocity: 'Baja (Estancado)', percentage: 15, trend: 'down', statusColor: 'bg-amber-500' },
   ]);
 
-  // Datos simulados de Productividad y Desglose Horario por Operador
-  const [operatorProductivity] = useState([
-    { 
-      id: 'OP-01',
-      name: 'Juan Pérez', 
-      role: 'Operador de Muelle', 
-      tasksCompleted: 42, 
-      efficiency: '96%', 
-      status: 'Excelente',
-      hourlyLog: [
-        { time: '08:15 a.m.', type: 'Recepción Muelle', detail: 'Ingreso Camión SGT-881 (250 ítems)', location: 'Muelle de Carga' },
-        { time: '09:40 a.m.', type: 'Escaneo RFID', detail: 'Validación de 18 Cámaras Domo 4K', location: 'Muelle de Carga' },
-        { time: '11:10 a.m.', type: 'Despacho Stock', detail: 'Salida de 2 unidades Cámara IP Domo 4K', location: 'Bodega Principal' },
-        { time: '02:15 p.m.', type: 'Auditoría', detail: 'Conteo de seguridad en Estante A1', location: 'Madefront Ferretería' },
-      ]
-    },
-    { 
-      id: 'OP-02',
-      name: 'Sonia Gómez', 
-      role: 'Encargada de Inventario', 
-      tasksCompleted: 38, 
-      efficiency: '92%', 
-      status: 'Óptimo',
-      hourlyLog: [
-        { time: '08:30 a.m.', type: 'Codificación RFID', detail: 'Grabar y pegar 45 tags para Lectores ZKTeco', location: 'Madefront Ferretería' },
-        { time: '10:15 a.m.', type: 'Alta de Producto', detail: 'Registro inicial de Taladro Percutor 800W', location: 'Bodega Principal' },
-        { time: '01:45 p.m.', type: 'Control Mermas', detail: 'Revisión discrepancia en Estante B3', location: 'Madefront Ferretería' },
-      ]
-    },
-    { 
-      id: 'OP-03',
-      name: 'Carlos Mendoza', 
-      role: 'Administrador (Gerente)', 
-      tasksCompleted: 65, 
-      efficiency: '99%', 
-      status: 'Sobresaliente',
-      hourlyLog: [
-        { time: '07:45 a.m.', type: 'Apertura Sistema', detail: 'Verificación Middleware y Antenas RFID', location: 'General' },
-        { time: '09:15 a.m.', type: 'Autorización', detail: 'Aprobación de ingreso camión PO-44102', location: 'Muelle de Carga' },
-        { time: '02:40 p.m.', type: 'Recepción Muelle', detail: 'Confirmación camión WXYZ-12 (50 ítems)', location: 'Muelle de Carga' },
-        { time: '04:00 p.m.', type: 'Reporte Gerencial', detail: 'Exportación de analítica de ventas', location: 'ERP Panel' },
-      ]
-    },
-  ]);
+  // Base de datos histórica simulada por Fecha para la Productividad de Operadores
+  const historicalOperatorData = {
+    '2026-10-24': [
+      { 
+        id: 'OP-01', name: 'Juan Pérez', role: 'Operador de Muelle', tasksCompleted: 42, efficiency: '96%', status: 'Excelente',
+        hourlyLog: [
+          { time: '08:15 a.m.', type: 'Recepción Muelle', detail: 'Ingreso Camión SGT-881 (250 ítems)', location: 'Muelle de Carga' },
+          { time: '09:40 a.m.', type: 'Escaneo RFID', detail: 'Validación de 18 Cámaras Domo 4K', location: 'Muelle de Carga' },
+          { time: '11:10 a.m.', type: 'Despacho Stock', detail: 'Salida de 2 unidades Cámara IP Domo 4K', location: 'Bodega Principal' },
+          { time: '02:15 p.m.', type: 'Auditoría', detail: 'Conteo de seguridad en Estante A1', location: 'Madefront Ferretería' },
+        ]
+      },
+      { 
+        id: 'OP-02', name: 'Sonia Gómez', role: 'Encargada de Inventario', tasksCompleted: 38, efficiency: '92%', status: 'Óptimo',
+        hourlyLog: [
+          { time: '08:30 a.m.', type: 'Codificación RFID', detail: 'Grabar y pegar 45 tags para Lectores ZKTeco', location: 'Madefront Ferretería' },
+          { time: '10:15 a.m.', type: 'Alta de Producto', detail: 'Registro inicial de Taladro Percutor 800W', location: 'Bodega Principal' },
+          { time: '01:45 p.m.', type: 'Control Mermas', detail: 'Revisión discrepancia en Estante B3', location: 'Madefront Ferretería' },
+        ]
+      },
+      { 
+        id: 'OP-03', name: 'Carlos Mendoza', role: 'Administrador (Gerente)', tasksCompleted: 65, efficiency: '99%', status: 'Sobresaliente',
+        hourlyLog: [
+          { time: '07:45 a.m.', type: 'Apertura Sistema', detail: 'Verificación Middleware y Antenas RFID', location: 'General' },
+          { time: '09:15 a.m.', type: 'Autorización', detail: 'Aprobación de ingreso camión PO-44102', location: 'Muelle de Carga' },
+          { time: '02:40 p.m.', type: 'Recepción Muelle', detail: 'Confirmación camión WXYZ-12 (50 ítems)', location: 'Muelle de Carga' },
+          { time: '04:00 p.m.', type: 'Reporte Gerencial', detail: 'Exportación de analítica de ventas', location: 'ERP Panel' },
+        ]
+      }
+    ],
+    '2026-10-23': [
+      { 
+        id: 'OP-01', name: 'Juan Pérez', role: 'Operador de Muelle', tasksCompleted: 58, efficiency: '94%', status: 'Excelente',
+        hourlyLog: [
+          { time: '08:00 a.m.', type: 'Recepción Muelle', detail: 'Ingreso Camión PO-98210 (120 ítems)', location: 'Muelle de Carga' },
+          { time: '11:30 a.m.', type: 'Escaneo Masivo', detail: 'Auditoría en rampa principal de camiones', location: 'Muelle de Carga' },
+          { time: '03:00 p.m.', type: 'Despacho', detail: 'Salida de mercancía hacia sucursal norte', location: 'Bodega Principal' }
+        ]
+      },
+      { 
+        id: 'OP-02', name: 'Sonia Gómez', role: 'Encargada de Inventario', tasksCompleted: 45, efficiency: '95%', status: 'Excelente',
+        hourlyLog: [
+          { time: '09:00 a.m.', type: 'Codificación', detail: 'Impresión de lote de 100 etiquetas UHF', location: 'Madefront Ferretería' },
+          { time: '02:00 p.m.', type: 'Conteo Físcio', detail: 'Auditoría de inventario en pasillo 3', location: 'Bodega Principal' }
+        ]
+      },
+      { 
+        id: 'OP-03', name: 'Carlos Mendoza', role: 'Administrador (Gerente)', tasksCompleted: 50, efficiency: '98%', status: 'Sobresaliente',
+        hourlyLog: [
+          { time: '10:00 a.m.', type: 'Corte Operativo', detail: 'Revisión general de mermas de la semana', location: 'ERP Panel' }
+        ]
+      }
+    ]
+  };
+
+  const currentOperatorsList = historicalOperatorData[selectedOperatorDate] || [
+    { id: 'OP-01', name: 'Juan Pérez', role: 'Operador de Muelle', tasksCompleted: 0, efficiency: 'N/A', status: 'Sin actividad', hourlyLog: [] },
+    { id: 'OP-02', name: 'Sonia Gómez', role: 'Encargada de Inventario', tasksCompleted: 0, efficiency: 'N/A', status: 'Sin actividad', hourlyLog: [] },
+    { id: 'OP-03', name: 'Carlos Mendoza', role: 'Administrador (Gerente)', tasksCompleted: 0, efficiency: 'N/A', status: 'Sin actividad', hourlyLog: [] },
+  ];
 
   const [cycleTimes] = useState([
     { truckId: 'REC-892', plate: 'SGT-881', provider: 'Ferretería Mayorista SAS', arrivalTime: '09:00 a.m.', scanTime: '09:15 a.m.', leadTime: '15 Minutos', status: 'Rápido' },
@@ -499,7 +516,7 @@ export default function ZonikaApp() {
         </div>
       )}
 
-      {/* MODAL INTERACTIVO: DESGLOSE HORARIO POR OPERADOR */}
+      {/* MODAL INTERACTIVO: DESGLOSE HORARIO POR OPERADOR Y FECHA */}
       {selectedOperatorDetails && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl space-y-6 relative overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -510,7 +527,7 @@ export default function ZonikaApp() {
                 </div>
                 <div>
                   <h3 className="text-base font-black text-white">{selectedOperatorDetails.name}</h3>
-                  <p className="text-xs text-cyan-400 font-semibold">{selectedOperatorDetails.role} • {selectedOperatorDetails.efficiency} Eficiencia</p>
+                  <p className="text-xs text-cyan-400 font-semibold">{selectedOperatorDetails.role} • Fecha: {selectedOperatorDate}</p>
                 </div>
               </div>
               <button 
@@ -523,25 +540,29 @@ export default function ZonikaApp() {
 
             <div className="space-y-3">
               <div className="flex justify-between items-center text-xs text-slate-400 font-bold uppercase tracking-wider">
-                <span>Línea de Tiempo de Actividad (Hoy)</span>
+                <span>Bitácora Hora por Hora ({selectedOperatorDate})</span>
                 <span className="text-emerald-400 font-mono">{selectedOperatorDetails.tasksCompleted} tareas procesadas</span>
               </div>
 
               <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                {selectedOperatorDetails.hourlyLog.map((log, index) => (
-                  <div key={index} className="flex gap-4 items-start bg-[#1E293B] border border-slate-800 p-3.5 rounded-2xl text-xs relative">
-                    <div className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded-lg font-mono font-bold shrink-0">
-                      {log.time}
-                    </div>
-                    <div className="space-y-0.5 flex-1">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-white uppercase text-[11px]">{log.type}</span>
-                        <span className="text-[10px] text-slate-400 font-semibold bg-slate-900 px-2 py-0.5 rounded-md">{log.location}</span>
+                {selectedOperatorDetails.hourlyLog && selectedOperatorDetails.hourlyLog.length > 0 ? (
+                  selectedOperatorDetails.hourlyLog.map((log, index) => (
+                    <div key={index} className="flex gap-4 items-start bg-[#1E293B] border border-slate-800 p-3.5 rounded-2xl text-xs relative">
+                      <div className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded-lg font-mono font-bold shrink-0">
+                        {log.time}
                       </div>
-                      <p className="text-slate-300 text-[11px]">{log.detail}</p>
+                      <div className="space-y-0.5 flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-white uppercase text-[11px]">{log.type}</span>
+                          <span className="text-[10px] text-slate-400 font-semibold bg-slate-900 px-2 py-0.5 rounded-md">{log.location}</span>
+                        </div>
+                        <p className="text-slate-300 text-[11px]">{log.detail}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-slate-500 text-xs">No hay registros detallados para esta fecha.</div>
+                )}
               </div>
             </div>
 
@@ -1345,7 +1366,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* MÓDULO DE REPORTES & EXPORTACIÓN CON DESGLOSE INTERACTIVO POR OPERADOR */}
+          {/* MÓDULO DE REPORTES & EXPORTACIÓN CON HISTÓRICO DIARIO DE OPERADORES */}
           {activeTab === 'reports' && hasAccess('reports') && (
             <div className="space-y-8 max-w-6xl mx-auto pb-12">
               
@@ -1376,7 +1397,7 @@ export default function ZonikaApp() {
                   <div className="flex items-center gap-3 bg-[#0F172A] border border-slate-800 p-3 rounded-xl">
                     <Calendar className="w-4 h-4 text-cyan-400 shrink-0" />
                     <div className="w-full">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase block">Rango de Fechas</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase block">Rango de Fechas (Reporte General)</label>
                       <select value={reportDateRange} onChange={(e)=>setReportDateRange(e.target.value)} className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer mt-0.5">
                         <option value="today" className="bg-slate-900">Hoy (Corte Diario)</option>
                         <option value="week" className="bg-slate-900">Esta Semana</option>
@@ -1487,21 +1508,35 @@ export default function ZonikaApp() {
               {/* GRID CON LAS HERRAMIENTAS ENTERPRISE */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* 1. Productividad por Operador (CON BOTÓN DE VER DESGLOSE) */}
+                {/* 1. Productividad por Operador (CON SELECTOR DE FECHA HISTÓRICA) */}
                 <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
-                  <div className="flex justify-between items-center border-b border-slate-700/80 pb-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-700/80 pb-3 gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                         <UserCheck className="w-4 h-4" />
                       </div>
                       <div>
                         <h3 className="text-xs font-bold text-white uppercase tracking-wider">Productividad por Operador</h3>
-                        <p className="text-[10px] text-slate-400">Haz clic para ver la bitácora hora por hora</p>
+                        <p className="text-[10px] text-slate-400">Selecciona el día para auditar</p>
                       </div>
                     </div>
+                    
+                    {/* Selector de Fecha Específica para Operadores */}
+                    <div className="bg-[#0F172A] border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                      <select 
+                        value={selectedOperatorDate} 
+                        onChange={(e) => setSelectedOperatorDate(e.target.value)}
+                        className="bg-transparent text-[11px] font-bold text-cyan-400 focus:outline-none cursor-pointer"
+                      >
+                        <option value="2026-10-24" className="bg-slate-900">Hoy (24 Oct 2026)</option>
+                        <option value="2026-10-23" className="bg-slate-900">Ayer (23 Oct 2026)</option>
+                      </select>
+                    </div>
                   </div>
+
                   <div className="space-y-2.5">
-                    {operatorProductivity.map((op) => (
+                    {currentOperatorsList.map((op) => (
                       <div 
                         key={op.id} 
                         onClick={() => setSelectedOperatorDetails(op)}
