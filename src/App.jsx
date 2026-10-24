@@ -3,7 +3,7 @@ import {
   Radio, Cpu, Activity, Play, Square, RefreshCw, CheckCircle2,
   Boxes, ArrowLeftRight, AlertTriangle, Search, Filter, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
-  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck
+  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, User
 } from 'lucide-react';
 import logo from './assets/Logo Zonika.png';
 
@@ -39,16 +39,16 @@ export default function ZonikaApp() {
 
   // Estado para el Muelle de Carga & Despacho (Camiones)
   const [muelleForm, setMuelleForm] = useState({
-    ordenCompra: '',
-    placaCamion: '',
-    transportadora: '',
-    proveedor: '',
+    ordenCompra: 'PO-98210',
+    placaCamion: 'SGT-442',
+    transportadora: 'TCC / Deprisa',
+    proveedor: 'Ferretería Mayorista SAS',
   });
 
   const [muelleItems, setMuelleItems] = useState([
     { id: 1, sku: 'INV-001', name: 'Lector Biométrico ZKTeco', expected: 50, read: 0, status: 'Pendiente' },
     { id: 2, sku: 'INV-002', name: 'Cámara IP Domo 4K', expected: 20, read: 18, status: 'En revisión' },
-    { id: 3, sku: 'INV-003', name: 'Etiqueta RFID UHF Zebra', expected: 500, read: 0, status: 'Pendiente' },
+    { id: 3, sku: 'INV-003', name: 'Etiqueta RFID UHF Zebra', expected: 500, read: 500, status: 'Completado' },
   ]);
 
   // Formularios
@@ -101,7 +101,7 @@ export default function ZonikaApp() {
     setMuelleItems(prev => prev.map(item => ({
       ...item,
       read: item.expected,
-      status: 'Verificado RFID'
+      status: 'Completado'
     })));
     showNotification('¡Lectura RFID masiva del camión completada con éxito!');
   };
@@ -115,7 +115,6 @@ export default function ZonikaApp() {
     }
 
     try {
-      // Envío opcional al backend en Render
       await fetch('https://zonika-backend.onrender.com/api/muelle-recepcion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,103 +122,102 @@ export default function ZonikaApp() {
       }).catch(() => {});
 
       showNotification('¡Entrada de mercancía del camión registrada y stock actualizado en la nube!');
-      setMuelleForm({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
     } catch (err) {
       showNotification('¡Entrada registrada correctamente en el muelle!');
     }
   };
 
   return (
-    <div className="flex h-screen w-screen bg-slate-100 text-slate-800 font-sans overflow-hidden">
+    <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans overflow-hidden">
       
       {/* Notificación flotante */}
       {notification && (
-        <div className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 text-xs font-bold animate-bounce">
-          <Check className="w-4 h-4" /> {notification}
+        <div className="fixed top-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-cyan-300 animate-bounce">
+          <CheckCircle2 className="w-4 h-4" /> <span>{notification}</span>
         </div>
       )}
 
-      {/* Sidebar / Menú Lateral Completo */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shadow-sm shrink-0">
+      {/* Sidebar / Menú Lateral Oscuro Minimalista */}
+      <aside className="w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between p-4 z-10 shrink-0 select-none">
         <div>
           {/* Logo y Encabezado */}
-          <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center p-1 shadow-inner overflow-hidden">
+          <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-slate-800/80">
+            <div className="w-10 h-10 bg-[#1E293B] border border-slate-700 rounded-xl flex items-center justify-center p-1 shadow-inner overflow-hidden">
               <img src={logo} alt="Zonika Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-slate-900 tracking-wide leading-tight">ZONIKA</h1>
-              <p className="text-[10px] text-indigo-600 font-semibold uppercase tracking-wider">Enterprise RFID Platform</p>
+              <h1 className="font-black text-lg text-white tracking-wide leading-none">ZONIKA</h1>
+              <p className="text-[10px] text-cyan-400 font-semibold tracking-widest uppercase mt-0.5">RFID Enterprise</p>
             </div>
           </div>
 
           {/* Sede Activa */}
-          <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+          <div className="mb-6 px-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
               Sede / Almacén Activo
             </label>
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-sm">
-              <Building2 className="w-4 h-4 text-indigo-600 shrink-0" />
+            <div className="flex items-center gap-2 bg-[#1E293B] border border-slate-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-200">
+              <Building2 className="w-4 h-4 text-cyan-400 shrink-0" />
               <select 
                 value={selectedWarehouse}
                 onChange={(e) => {
                   setSelectedWarehouse(e.target.value);
                   if (e.target.value === 'Muelle') setActiveTab('muelle');
                 }}
-                className="w-full bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
               >
-                <option value="Madefront">Madefront Ferretería</option>
-                <option value="Muelle">Muelle de Carga & Despachos</option>
-                <option value="Sucursal">Sucursal Norte</option>
+                <option value="Madefront" className="bg-slate-900">Madefront Ferretería</option>
+                <option value="Muelle" className="bg-slate-900">Muelle de Carga & Despachos</option>
+                <option value="Sucursal" className="bg-slate-900">Sucursal Norte</option>
               </select>
             </div>
           </div>
 
           {/* Navegación Completa */}
-          <div className="p-3 space-y-4 overflow-y-auto max-h-[calc(100vh-210px)]">
+          <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-230px)] pr-1">
             <div>
-              <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Operación & Stock</p>
+              <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Operación & Stock</p>
               <nav className="space-y-1">
-                <button onClick={() => { setActiveTab('muelle'); setSelectedWarehouse('Muelle'); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'muelle' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => { setActiveTab('muelle'); setSelectedWarehouse('Muelle'); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Truck className="w-4 h-4" /> Muelle de Carga & Despacho
                 </button>
-                <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Activity className="w-4 h-4" /> Panel General
                 </button>
-                <button onClick={() => setActiveTab('inventory')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'inventory' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => setActiveTab('inventory')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'inventory' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Boxes className="w-4 h-4" /> Stock e Inventarios
                 </button>
-                <button onClick={() => setActiveTab('movements')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'movements' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => setActiveTab('movements')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <ArrowLeftRight className="w-4 h-4" /> Entradas y Salidas
                 </button>
-                <button onClick={() => setActiveTab('audits')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'audits' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => setActiveTab('audits')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'audits' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <ShieldAlert className="w-4 h-4" /> Auditorías & Cuadres
                 </button>
               </nav>
             </div>
 
             <div>
-              <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Herramientas RFID</p>
+              <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Herramientas RFID</p>
               <nav className="space-y-1">
-                <button onClick={() => setActiveTab('encoder')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'encoder' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => setActiveTab('encoder')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Printer className="w-4 h-4" /> Grabación / Impresión Tag
                 </button>
-                <button onClick={() => setActiveTab('monitor')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'monitor' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => setActiveTab('monitor')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'monitor' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Radio className="w-4 h-4" /> Monitor de Tags (EPC)
                 </button>
-                <button onClick={() => setActiveTab('hardware')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'hardware' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => setActiveTab('hardware')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'hardware' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Cpu className="w-4 h-4" /> Hardware & Antenas
                 </button>
               </nav>
             </div>
 
             <div>
-              <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sistema & Analítica</p>
+              <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Sistema & Analítica</p>
               <nav className="space-y-1">
-                <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'reports' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <BarChart3 className="w-4 h-4" /> Reportes & Exportación
                 </button>
-                <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'settings' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'settings' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
                   <Settings className="w-4 h-4" /> Configuración ERP
                 </button>
               </nav>
@@ -227,104 +225,109 @@ export default function ZonikaApp() {
           </div>
         </div>
 
-        <div className="p-3 border-t border-slate-100 text-[11px] text-slate-400 text-center font-medium">
-          Zonika Intelligent Inventory <br/>
-          <span className="text-slate-500">Zonika Suite v1.0</span>
+        <div className="border-t border-slate-800/80 pt-3 px-2">
+          <p className="text-[11px] font-bold text-slate-300">Zonika Suite v1.0</p>
+          <p className="text-[10px] text-slate-500">Middleware System Active</p>
         </div>
       </aside>
 
       {/* Contenido Central */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-100">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120]">
         
         {/* Barra Superior */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm shrink-0">
+        <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 z-20 shadow-md">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Estado:</span>
-            <span className="flex items-center gap-2 text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1 rounded-full font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Servidor Middleware Activo
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Estado Sistema:</span>
+            <span className="flex items-center gap-2 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Servidor Middleware Activo
             </span>
           </div>
 
-          <button 
-            onClick={() => {
-              setIsReading(!isReading);
-              showNotification(isReading ? 'Escaneo RFID detenido.' : '¡Escaneo RFID activo simulando lectura!');
-            }} 
-            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm ${
-              isReading ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white'
-            }`}
-          >
-            {isReading ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-            {isReading ? 'Detener Escaneo' : 'Iniciar Conteo RFID'}
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 bg-[#1E293B] border border-slate-700/80 px-3 py-1.5 rounded-xl">
+              <User size={15} className="text-cyan-400" />
+              <span>ADMIN: L. HERNÁNDEZ</span>
+            </div>
+
+            <button 
+              onClick={() => {
+                setIsReading(!isReading);
+                showNotification(isReading ? 'Escaneo RFID detenido.' : '📡 Módulo RFID en vivo Activado - Escaneando EPCs...');
+              }} 
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg ${
+                isReading ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20' : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
+              }`}
+            >
+              {isReading ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+              {isReading ? 'Detener Escaneo' : 'INICIAR CONTEO RFID'}
+            </button>
+          </div>
         </header>
 
         {/* Zona Dinámica */}
         <div className="flex-1 overflow-y-auto p-8">
           
-          {/* MUELLE DE CARGA & DESPACHO (FULL PARA RECEPCIÓN DE CAMIONES) */}
+          {/* MUELLE DE CARGA & DESPACHO */}
           {activeTab === 'muelle' && (
             <div className="space-y-6 max-w-6xl mx-auto">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Muelle de Carga & Despacho — Recepción de Camiones</h2>
-                  <p className="text-slate-500 text-xs mt-1">Registro de ingresos de camiones, órdenes de compra y lectura RFID masiva en tiempo real.</p>
-                </div>
+              <div>
+                <h2 className="text-2xl font-black text-white tracking-tight">Muelle de Carga & Despacho — Recepción de Camiones</h2>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Registro de ingresos de camiones, órdenes de compra y lectura RFID masiva en tiempo real.</p>
               </div>
 
               {/* Formulario de Ingreso de Camión */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-indigo-600" /> Datos del Transporte y Proveedor
+              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-cyan-400" /> Datos del Transporte y Proveedor
                 </h3>
                 <form onSubmit={handleRegisterTruckEntry} className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Orden de Compra (PO)</label>
+                    <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Orden de Compra (PO)</label>
                     <input 
                       type="text" 
                       placeholder="Ej. PO-98210" 
                       value={muelleForm.ordenCompra} 
                       onChange={(e)=>setMuelleForm({...muelleForm, ordenCompra: e.target.value})} 
-                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-medium" 
+                      className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" 
                       required
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Placa del Camión</label>
+                    <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Placa del Camión</label>
                     <input 
                       type="text" 
                       placeholder="Ej. SGT-442" 
                       value={muelleForm.placaCamion} 
                       onChange={(e)=>setMuelleForm({...muelleForm, placaCamion: e.target.value})} 
-                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-medium" 
+                      className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" 
                       required
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Transportadora</label>
+                    <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Transportadora</label>
                     <input 
                       type="text" 
                       placeholder="Ej. TCC / Deprisa" 
                       value={muelleForm.transportadora} 
                       onChange={(e)=>setMuelleForm({...muelleForm, transportadora: e.target.value})} 
-                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-medium" 
+                      className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" 
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Proveedor</label>
+                    <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Proveedor</label>
                     <input 
                       type="text" 
                       placeholder="Ej. Ferretería Mayorista SAS" 
                       value={muelleForm.proveedor} 
                       onChange={(e)=>setMuelleForm({...muelleForm, proveedor: e.target.value})} 
-                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-medium" 
+                      className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" 
                     />
                   </div>
 
                   <div className="md:col-span-4 flex justify-end gap-3 pt-2">
                     <button 
                       type="submit" 
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2"
+                      className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2"
                     >
                       <CheckCircle2 className="w-4 h-4" /> Confirmar Ingreso de Mercancía al Stock
                     </button>
@@ -333,58 +336,62 @@ export default function ZonikaApp() {
               </div>
 
               {/* Tabla de Artículos Esperados vs Leídos por RFID en el Muelle */}
-              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">📦 Mercancía Detectada por Antena RFID (Muelle)</h3>
+              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <PackageCheck className="w-4 h-4 text-cyan-400" /> Mercancía Detectada por Antena RFID (Muelle)
+                  </h3>
                   <button 
                     type="button" 
                     onClick={handleMuelleScan} 
-                    className="flex items-center gap-2 bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-emerald-700 shadow-sm"
+                    className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 font-bold text-xs px-4 py-2 rounded-xl transition-all"
                   >
-                    <Radio className="w-4 h-4" /> Simular Escaneo RFID Masivo
+                    <Zap className="w-4 h-4" /> Simular Escaneo RFID Masivo
                   </button>
                 </div>
 
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider bg-slate-50">
-                      <th className="p-4">SKU</th>
-                      <th className="p-4">Producto</th>
-                      <th className="p-4 text-center">Esperado (PO)</th>
-                      <th className="p-4 text-center">RFID Leído</th>
-                      <th className="p-4">Estado</th>
-                      <th className="p-4 text-center">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {muelleItems.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-4 font-mono font-bold text-slate-900">{item.sku}</td>
-                        <td className="p-4 font-medium text-slate-800">{item.name}</td>
-                        <td className="p-4 text-center font-bold text-slate-700">{item.expected}</td>
-                        <td className="p-4 text-center font-black text-indigo-600">{item.read}</td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${item.read === item.expected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
-                            {item.read === item.expected ? 'Completo ✓' : item.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center">
-                          <button 
-                            onClick={() => {
-                              const qty = prompt(`Actualizar cantidad leída para ${item.name}:`, item.read);
-                              if (qty !== null) {
-                                setMuelleItems(muelleItems.map(i => i.id === item.id ? {...i, read: parseInt(qty) || 0} : i));
-                              }
-                            }} 
-                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-slate-200"
-                          >
-                            Ajustar
-                          </button>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider">
+                        <th className="py-3 px-4">SKU</th>
+                        <th className="py-3 px-4">Producto</th>
+                        <th className="py-3 px-4 text-center">Esperado (PO)</th>
+                        <th className="py-3 px-4 text-center">RFID Leído</th>
+                        <th className="py-3 px-4 text-center">Estado</th>
+                        <th className="py-3 px-4 text-center">Acción</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
+                      {muelleItems.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{item.sku}</td>
+                          <td className="py-3.5 px-4 font-semibold text-white">{item.name}</td>
+                          <td className="py-3.5 px-4 text-center font-bold text-slate-300">{item.expected}</td>
+                          <td className="py-3.5 px-4 text-center font-black text-cyan-400 text-sm">{item.read}</td>
+                          <td className="py-3.5 px-4 text-center">
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${item.read === item.expected ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+                              {item.read === item.expected ? 'Completado' : item.status}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <button 
+                              onClick={() => {
+                                const qty = prompt(`Actualizar cantidad leída para ${item.name}:`, item.read);
+                                if (qty !== null) {
+                                  setMuelleItems(muelleItems.map(i => i.id === item.id ? {...i, read: parseInt(qty) || 0} : i));
+                                }
+                              }} 
+                              className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-slate-700"
+                            >
+                              Ajustar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -393,30 +400,30 @@ export default function ZonikaApp() {
           {activeTab === 'dashboard' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Panel General de Inventarios</h2>
-                <p className="text-slate-500 text-xs mt-1">Supervisión en tiempo real de {selectedWarehouse}.</p>
+                <h2 className="text-2xl font-black text-white tracking-tight">Panel General de Inventarios</h2>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión en tiempo real de {selectedWarehouse}.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
-                  <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Total Productos</p>
-                  <p className="text-3xl font-black text-slate-900 mt-2">{inventory.length}</p>
-                  <span className="text-xs text-emerald-600 mt-1 block font-semibold">Vinculados a RFID</span>
+                <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md">
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Total Productos</p>
+                  <p className="text-4xl font-black text-white mt-2">{inventory.length}</p>
+                  <span className="text-[10px] text-emerald-400 mt-1 block font-semibold uppercase">Vinculados a RFID</span>
                 </div>
-                <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
-                  <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Movimientos</p>
-                  <p className="text-3xl font-black text-slate-900 mt-2">{movements.length}</p>
-                  <span className="text-xs text-indigo-600 mt-1 block font-semibold">Auditoría al día</span>
+                <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md">
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Movimientos</p>
+                  <p className="text-4xl font-black text-cyan-400 mt-2">{movements.length}</p>
+                  <span className="text-[10px] text-slate-400 mt-1 block font-semibold uppercase">Auditoría al día</span>
                 </div>
-                <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
-                  <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Discrepancias</p>
-                  <p className="text-3xl font-black text-slate-900 mt-2">{discrepancies.length}</p>
-                  <span className="text-xs text-rose-600 mt-1 block font-semibold">Requieren revisión</span>
+                <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md">
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Discrepancias</p>
+                  <p className="text-4xl font-black text-amber-400 mt-2">{discrepancies.length}</p>
+                  <span className="text-[10px] text-amber-400 mt-1 block font-semibold uppercase">Requieren revisión</span>
                 </div>
-                <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
-                  <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Alertas Stock</p>
-                  <p className="text-3xl font-black text-slate-900 mt-2">1 Item</p>
-                  <span className="text-xs text-amber-600 mt-1 block font-semibold">Bajo stock crítico</span>
+                <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md">
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Alertas Stock</p>
+                  <p className="text-4xl font-black text-rose-400 mt-2">1</p>
+                  <span className="text-[10px] text-rose-400 mt-1 block font-semibold uppercase">Bajo stock crítico</span>
                 </div>
               </div>
             </div>
@@ -427,67 +434,69 @@ export default function ZonikaApp() {
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-end">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Control de Stock e Inventarios</h2>
-                  <p className="text-slate-500 text-xs mt-1">Gestión y registro en vivo de productos.</p>
+                  <h2 className="text-2xl font-black text-white tracking-tight">Control de Stock e Inventarios</h2>
+                  <p className="text-slate-400 text-xs mt-1 font-medium">Gestión y registro en vivo de productos.</p>
                 </div>
-                <button onClick={() => setActiveTab('add-product')} className="flex items-center gap-2 bg-indigo-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-indigo-700 shadow-sm">
+                <button onClick={() => setActiveTab('add-product')} className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg">
                   <Plus className="w-4 h-4" /> Registrar Nuevo Producto
                 </button>
               </div>
 
-              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider bg-slate-50">
-                      <th className="p-4">SKU</th>
-                      <th className="p-4">Código RFID (EPC)</th>
-                      <th className="p-4">Producto</th>
-                      <th className="p-4">Categoría</th>
-                      <th className="p-4 text-center">Stock</th>
-                      <th className="p-4">Ubicación</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {inventory.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-4 font-mono font-bold text-slate-900">{item.id}</td>
-                        <td className="p-4 font-mono text-indigo-600 font-semibold">{item.epc}</td>
-                        <td className="p-4 font-medium text-slate-800">{item.name}</td>
-                        <td className="p-4 text-slate-500">{item.category}</td>
-                        <td className="p-4 text-center font-bold text-slate-900">{item.stock}</td>
-                        <td className="p-4 text-slate-500">{item.location}</td>
+              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 text-[10px] uppercase tracking-wider bg-slate-900/40">
+                        <th className="py-3 px-4">SKU</th>
+                        <th className="py-3 px-4">Código RFID (EPC)</th>
+                        <th className="py-3 px-4">Producto</th>
+                        <th className="py-3 px-4">Categoría</th>
+                        <th className="py-3 px-4 text-center">Stock</th>
+                        <th className="py-3 px-4">Ubicación</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
+                      {inventory.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{item.id}</td>
+                          <td className="py-3.5 px-4 font-mono text-slate-400">{item.epc}</td>
+                          <td className="py-3.5 px-4 font-semibold text-white">{item.name}</td>
+                          <td className="py-3.5 px-4 text-slate-400">{item.category}</td>
+                          <td className="py-3.5 px-4 text-center font-bold text-white">{item.stock}</td>
+                          <td className="py-3.5 px-4 text-slate-400">{item.location}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
 
           {/* AGREGAR PRODUCTO */}
           {activeTab === 'add-product' && (
-            <div className="space-y-6 max-w-2xl mx-auto bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-              <h2 className="text-xl font-black text-slate-900">Registrar Nuevo Producto en Inventario</h2>
+            <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
+              <h2 className="text-xl font-black text-white uppercase tracking-wider">Registrar Nuevo Producto en Inventario</h2>
               <form onSubmit={handleAddProduct} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">SKU / Código</label>
-                  <input type="text" placeholder="Ej. INV-005" value={newProduct.id} onChange={(e)=>setNewProduct({...newProduct, id: e.target.value})} className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs" />
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">SKU / Código</label>
+                  <input type="text" placeholder="Ej. INV-005" value={newProduct.id} onChange={(e)=>setNewProduct({...newProduct, id: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Nombre del Artículo</label>
-                  <input type="text" placeholder="Ej. Taladro Percutor" value={newProduct.name} onChange={(e)=>setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs" />
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Nombre del Artículo</label>
+                  <input type="text" placeholder="Ej. Taladro Percutor" value={newProduct.name} onChange={(e)=>setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Cantidad Inicial (Stock)</label>
-                  <input type="number" placeholder="Ej. 25" value={newProduct.stock} onChange={(e)=>setNewProduct({...newProduct, stock: e.target.value})} className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs" />
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Cantidad Inicial (Stock)</label>
+                  <input type="number" placeholder="Ej. 25" value={newProduct.stock} onChange={(e)=>setNewProduct({...newProduct, stock: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Ubicación</label>
-                  <input type="text" placeholder="Ej. Estante C2" value={newProduct.location} onChange={(e)=>setNewProduct({...newProduct, location: e.target.value})} className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs" />
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Ubicación</label>
+                  <input type="text" placeholder="Ej. Estante C2" value={newProduct.location} onChange={(e)=>setNewProduct({...newProduct, location: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" />
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
-                  <button type="button" onClick={()=>setActiveTab('inventory')} className="px-4 py-2 text-xs font-bold bg-slate-100 rounded-xl">Cancelar</button>
-                  <button type="submit" className="px-5 py-2 text-xs font-bold bg-indigo-600 text-white rounded-xl shadow-sm">Guardar y Vincular RFID</button>
+                  <button type="button" onClick={()=>setActiveTab('inventory')} className="px-5 py-2.5 text-xs font-bold bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
+                  <button type="submit" className="px-5 py-2.5 text-xs font-bold bg-cyan-500 text-slate-950 rounded-xl shadow-lg shadow-cyan-500/20">Guardar y Vincular RFID</button>
                 </div>
               </form>
             </div>
@@ -497,222 +506,169 @@ export default function ZonikaApp() {
           {activeTab === 'movements' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Registro de Entradas y Salidas</h2>
-                <p className="text-slate-500 text-xs mt-1">Control de despachos y recepciones de mercancía.</p>
+                <h2 className="text-2xl font-black text-white tracking-tight">Registro de Entradas y Salidas</h2>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Control de despachos y recepciones de mercancía.</p>
               </div>
 
-              <form onSubmit={handleAddMovement} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex gap-4 items-end">
+              <form onSubmit={handleAddMovement} className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-xl flex gap-4 items-end">
                 <div className="flex-1">
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Tipo</label>
-                  <select value={newMovement.type} onChange={(e)=>setNewMovement({...newMovement, type: e.target.value})} className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-bold">
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Tipo</label>
+                  <select value={newMovement.type} onChange={(e)=>setNewMovement({...newMovement, type: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-cyan-400">
                     <option value="ENTRADA">ENTRADA (Recepción)</option>
                     <option value="SALIDA">SALIDA (Despacho)</option>
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Artículo</label>
-                  <input type="text" placeholder="Nombre del producto" value={newMovement.item} onChange={(e)=>setNewMovement({...newMovement, item: e.target.value})} className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs" />
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Artículo</label>
+                  <input type="text" placeholder="Nombre del producto" value={newMovement.item} onChange={(e)=>setNewMovement({...newMovement, item: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400" />
                 </div>
                 <div className="w-24">
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Cantidad</label>
-                  <input type="number" min="1" value={newMovement.qty} onChange={(e)=>setNewMovement({...newMovement, qty: e.target.value})} className="w-full bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs text-center" />
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Cantidad</label>
+                  <input type="number" min="1" value={newMovement.qty} onChange={(e)=>setNewMovement({...newMovement, qty: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs text-center text-white focus:outline-none focus:border-cyan-400" />
                 </div>
-                <button type="submit" className="bg-indigo-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-indigo-700">Registrar</button>
+                <button type="submit" className="bg-cyan-500 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg hover:bg-cyan-400">Registrar</button>
               </form>
 
-              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider bg-slate-50">
-                      <th className="p-4">ID</th>
-                      <th className="p-4">Tipo</th>
-                      <th className="p-4">Artículo</th>
-                      <th className="p-4 text-center">Cantidad</th>
-                      <th className="p-4">Usuario</th>
-                      <th className="p-4">Hora</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {movements.map((m, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-4 font-mono font-bold text-slate-900">{m.id}</td>
-                        <td className="p-4 font-bold">
-                          <span className={`px-2 py-1 rounded-lg text-[10px] ${m.type === 'ENTRADA' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-indigo-50 text-indigo-600 border border-indigo-200'}`}>
-                            {m.type}
-                          </span>
-                        </td>
-                        <td className="p-4 font-medium text-slate-800">{m.item}</td>
-                        <td className="p-4 text-center font-bold">{m.qty}</td>
-                        <td className="p-4 text-slate-500">{m.user}</td>
-                        <td className="p-4 text-slate-400">{m.time}</td>
+              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 text-[10px] uppercase tracking-wider bg-slate-900/40">
+                        <th className="py-3 px-4">ID</th>
+                        <th className="py-3 px-4">Tipo</th>
+                        <th className="py-3 px-4">Artículo</th>
+                        <th className="py-3 px-4 text-center">Cantidad</th>
+                        <th className="py-3 px-4">Usuario</th>
+                        <th className="py-3 px-4">Hora</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
+                      {movements.map((m, idx) => (
+                        <tr key={idx} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{m.id}</td>
+                          <td className="py-3.5 px-4">
+                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${m.type === 'ENTRADA' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+                              {m.type}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 font-semibold text-white">{m.item}</td>
+                          <td className="py-3.5 px-4 text-center font-bold text-white">{m.qty}</td>
+                          <td className="py-3.5 px-4 text-slate-400">{m.user}</td>
+                          <td className="py-3.5 px-4 text-slate-500">{m.time}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
 
-          {/* AUDITORÍAS & CUADRES */}
+          {/* OTRAS PESTAÑAS (Auditorías, Monitor, Hardware, etc.) */}
           {activeTab === 'audits' && (
             <div className="space-y-6 max-w-6xl mx-auto">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Auditorías & Cuadres de Inventario</h2>
-                <p className="text-slate-500 text-xs mt-1">Comparativa entre sistema ERP y lectura física RFID.</p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider bg-slate-50">
-                      <th className="p-3">SKU</th>
-                      <th className="p-3">Producto</th>
-                      <th className="p-3 text-center">Esperado (ERP)</th>
-                      <th className="p-3 text-center">RFID Leído</th>
-                      <th className="p-3 text-center">Diferencia</th>
-                      <th className="p-3">Causa</th>
-                      <th className="p-3 text-center">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
-                    {discrepancies.map((d, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-3 font-mono font-bold">{d.sku}</td>
-                        <td className="p-3 font-medium">{d.item}</td>
-                        <td className="p-3 text-center font-bold">{d.expected}</td>
-                        <td className="p-3 text-center font-bold text-indigo-600">{d.rfidCount}</td>
-                        <td className="p-3 text-center font-black text-rose-600">{d.diff}</td>
-                        <td className="p-3 text-slate-500">{d.cause}</td>
-                        <td className="p-3 text-center">
-                          <button onClick={() => showNotification('¡Discrepancia ajustada en el sistema!')} className="bg-slate-100 hover:bg-slate-200 text-[10px] font-bold px-2.5 py-1 rounded-lg">Ajustar</button>
-                        </td>
+              <h2 className="text-2xl font-black text-white tracking-tight">Auditorías & Discrepancias</h2>
+              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider">
+                        <th className="py-3 px-4">ID Auditoría</th>
+                        <th className="py-3 px-4">Producto</th>
+                        <th className="py-3 px-4 text-center">Teórico</th>
+                        <th className="py-3 px-4 text-center">RFID Contado</th>
+                        <th className="py-3 px-4 text-center">Diferencia</th>
+                        <th className="py-3 px-4">Causa Estimada</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* GRABACIÓN TAG */}
-          {activeTab === 'encoder' && (
-            <div className="space-y-6 max-w-4xl mx-auto">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Grabación y Codificación de Etiquetas RFID</h2>
-                <p className="text-slate-500 text-xs mt-1">Escribe nuevos códigos EPC en los chips.</p>
-              </div>
-              <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Código EPC Generado</label>
-                  <input type="text" readOnly value="E280689400004001F830" className="w-full bg-slate-100 border border-slate-200 p-2.5 rounded-xl text-xs font-mono text-indigo-600 font-bold" />
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
+                      {discrepancies.map((d) => (
+                        <tr key={d.id} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono text-cyan-400 font-bold">{d.id}</td>
+                          <td className="py-3.5 px-4 font-semibold text-white">{d.item}</td>
+                          <td className="py-3.5 px-4 text-center font-bold">{d.expected}</td>
+                          <td className="py-3.5 px-4 text-center text-cyan-400 font-bold">{d.rfidCount}</td>
+                          <td className="py-3.5 px-4 text-center text-amber-400 font-black">{d.diff}</td>
+                          <td className="py-3.5 px-4 text-slate-400">{d.cause}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <button onClick={() => showNotification('¡Tag grabado con éxito!')} className="flex items-center gap-2 bg-indigo-600 text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 shadow-sm">
-                  <Printer className="w-4 h-4" /> Grabar Tag RFID
-                </button>
               </div>
             </div>
           )}
 
-          {/* MONITOR EN VIVO */}
           {activeTab === 'monitor' && (
             <div className="space-y-6 max-w-6xl mx-auto">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Monitor en Vivo (EPC)</h2>
-                <p className="text-slate-500 text-xs mt-1">Detección de etiquetas en tiempo real.</p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider bg-slate-50">
-                      <th className="p-4">EPC</th>
-                      <th className="p-4">Artículo</th>
-                      <th className="p-4">Antena</th>
-                      <th className="p-4">RSSI</th>
-                      <th className="p-4">Tiempo</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs font-mono">
-                    {tags.map((t, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-4 text-indigo-600 font-bold">{t.epc}</td>
-                        <td className="p-4 text-slate-700 font-sans">{t.item}</td>
-                        <td className="p-4 text-slate-600 font-sans">{t.ant}</td>
-                        <td className="p-4 text-emerald-600 font-bold font-sans">{t.rssi}</td>
-                        <td className="p-4 text-slate-400 font-sans">{t.time}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <h2 className="text-2xl font-black text-white tracking-tight">Monitor de Lectura de EPCs</h2>
+              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl">
+                <div className="space-y-2">
+                  {tags.map((t) => (
+                    <div key={t.id} className="flex justify-between items-center bg-[#0F172A] border border-slate-800 p-4 rounded-xl font-mono text-xs">
+                      <div>
+                        <span className="text-cyan-400 font-bold block">{t.epc}</span>
+                        <span className="text-slate-400 text-[11px]">{t.item}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-emerald-400 font-semibold block">{t.ant}</span>
+                        <span className="text-slate-500 text-[10px]">{t.rssi} | {t.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* HARDWARE */}
           {activeTab === 'hardware' && (
             <div className="space-y-6 max-w-6xl mx-auto">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Hardware & Antenas RFID</h2>
-                <p className="text-slate-500 text-xs mt-1">Potencia y estado de lectores.</p>
-              </div>
-              <div className="bg-white border border-slate-200 p-6 rounded-2xl space-y-6 shadow-sm">
-                <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900">Zebra FX9600 (LLRP)</h3>
-                    <p className="text-xs text-slate-500 font-mono mt-0.5">IP: 192.168.1.150</p>
+              <h2 className="text-2xl font-black text-white tracking-tight">Hardware & Antenas Conectadas</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-xs uppercase text-white">Lector Fijo Zebra FX9600</span>
+                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/30 font-bold">ONLINE</span>
                   </div>
-                  <span className="bg-emerald-50 text-emerald-600 text-xs px-3 py-1 rounded-full font-semibold border border-emerald-200">Online</span>
+                  <p className="text-xs text-slate-400 font-mono">IP: 192.168.1.150 | Antenas: 4 Activas</p>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-600 font-semibold">Potencia Transmisión</span>
-                    <span className="text-indigo-600 font-bold">30 dBm</span>
+                <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-xs uppercase text-white">Colector Chainway C66</span>
+                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/30 font-bold">ONLINE</span>
                   </div>
-                  <input type="range" min="10" max="30" defaultValue="30" className="w-full accent-indigo-600 cursor-pointer" />
+                  <p className="text-xs text-slate-400 font-mono">IP: 192.168.1.182 | Modo: Handheld RFID</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* REPORTES */}
+          {activeTab === 'encoder' && (
+            <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
+              <h2 className="text-xl font-black text-white uppercase tracking-wider">Grabación e Impresión de Tags RFID</h2>
+              <p className="text-xs text-slate-400">Generación y escritura masiva de códigos EPC en etiquetas UHF.</p>
+            </div>
+          )}
+
           {activeTab === 'reports' && (
-            <div className="space-y-6 max-w-4xl mx-auto">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Reportes & Exportación</h2>
-                <p className="text-slate-500 text-xs mt-1">Descarga de informes de inventario y trazabilidad.</p>
-              </div>
-              <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900">Exportar Inventario Completo (Excel)</h3>
-                  <p className="text-xs text-slate-400">Incluye stock físico, tags RFID vinculados y ubicaciones.</p>
-                </div>
-                <button onClick={() => showNotification('¡Reporte exportado en Excel correctamente!')} className="flex items-center gap-2 bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-emerald-700 shadow-sm">
-                  <Download className="w-4 h-4" /> Descargar Excel
-                </button>
+            <div className="space-y-6 max-w-6xl mx-auto">
+              <h2 className="text-2xl font-black text-white tracking-tight">Reportes & Exportación</h2>
+              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl">
+                <p className="text-xs text-slate-400">Exporta historiales de inventario y lecturas RFID a Excel o CSV.</p>
               </div>
             </div>
           )}
 
-          {/* CONFIGURACIÓN ERP */}
           {activeTab === 'settings' && (
-            <div className="space-y-6 max-w-4xl mx-auto">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Configuración ERP / Middleware</h2>
-                <p className="text-slate-500 text-xs mt-1">Conexión con endpoints y sincronización REST.</p>
-              </div>
-              <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Endpoint Webhook / API URL</label>
-                  <input 
-                    type="text" 
-                    defaultValue="https://zonika-backend.onrender.com" 
-                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-mono text-indigo-600 font-bold" 
-                  />
-                </div>
-              </div>
+            <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
+              <h2 className="text-xl font-black text-white uppercase tracking-wider">Configuración ERP y Middleware</h2>
+              <p className="text-xs text-slate-400">Parámetros de conexión con antenas y servicios en Render.</p>
             </div>
           )}
 
         </div>
       </main>
+
     </div>
   );
 }
