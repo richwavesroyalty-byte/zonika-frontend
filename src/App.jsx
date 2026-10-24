@@ -96,17 +96,6 @@ export default function ZonikaApp() {
     { id: 'DISC-101', sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, location: 'Madefront Ferretería - Estante B3', cause: 'Posible extravío / Sin etiqueta RFID' },
   ]);
 
-  const [tags, setTags] = useState([
-    { id: 1, epc: 'E280689400004001F82B', item: 'Lector Biométrico ZKTeco', ant: 'Muelle - Puerta Principal', rssi: '-54 dBm', time: 'Hace 2s' },
-  ]);
-
-  const [productSalesPerformance] = useState([
-    { id: 'INV-001', name: 'Lector Biométrico ZKTeco', category: 'Seguridad', velocity: 'Alta', percentage: 88, trend: 'up', statusColor: 'bg-emerald-500' },
-    { id: 'BOD-501', name: 'Taladro Percutor Industrial 800W', category: 'Herramientas', velocity: 'Alta', percentage: 76, trend: 'up', statusColor: 'bg-emerald-500' },
-    { id: 'INV-002', name: 'Cámara IP Domo 4K', category: 'CCTV', velocity: 'Media', percentage: 45, trend: 'stable', statusColor: 'bg-cyan-500' },
-    { id: 'BOD-502', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', velocity: 'Baja (Estancado)', percentage: 15, trend: 'down', statusColor: 'bg-amber-500' },
-  ]);
-
   const historicalOperatorData = {
     '2026-10-24': [
       { 
@@ -152,20 +141,6 @@ export default function ZonikaApp() {
 
   const [newProduct, setNewProduct] = useState({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
   const [newMovement, setNewMovement] = useState({ type: 'ENTRADA', item: '', qty: 1 });
-
-  const [encoderForm, setEncoderForm] = useState({
-    sku: 'INV-005',
-    productName: 'Cerradura Inteligente Biométrica',
-    quantity: 10,
-    targetWarehouse: 'Madefront Ferretería',
-    locationDetail: 'Estante D4',
-    generatedEpc: 'E28068940000' + Math.floor(10000000 + Math.random() * 90000000)
-  });
-
-  const [encodedHistory, setEncodedHistory] = useState(() => {
-    const saved = localStorage.getItem('zonika_encoded_history');
-    return saved ? JSON.parse(saved) : [];
-  });
 
   useEffect(() => {
     localStorage.setItem('zonika_current_user', JSON.stringify(currentUser));
