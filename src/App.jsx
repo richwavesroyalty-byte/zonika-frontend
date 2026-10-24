@@ -5,7 +5,7 @@ import {
   Printer, BarChart3, Settings, ShieldAlert, Building2,
   Trash2, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin,
   Lock, Mail, LogOut, Shield, TrendingUp, TrendingDown, Sparkles, Download, FileText,
-  Calendar, Clock, UserCheck, AlertOctagon, Filter
+  Calendar, Clock, UserCheck, AlertOctagon, Filter, X, Eye
 } from 'lucide-react';
 import logoIsotipo from './assets/Logo Isotipo.png';
 
@@ -24,9 +24,10 @@ export default function ZonikaApp() {
   const [inventorySubTab, setInventorySubTab] = useState('madefront');
   const [notification, setNotification] = useState(null);
 
-  // Estados para Filtros Avanzados de Reportes
+  // Estados para Filtros Avanzados de Reportes y Modal de Operador
   const [reportDateRange, setReportDateRange] = useState('month');
   const [reportWarehouseFilter, setReportWarehouseFilter] = useState('all');
+  const [selectedOperatorDetails, setSelectedOperatorDetails] = useState(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -90,11 +91,49 @@ export default function ZonikaApp() {
     { id: 'BOD-502', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', velocity: 'Baja (Estancado)', percentage: 15, trend: 'down', statusColor: 'bg-amber-500' },
   ]);
 
-  // Datos simulados para las nuevas 5 herramientas gerenciales
+  // Datos simulados de Productividad y Desglose Horario por Operador
   const [operatorProductivity] = useState([
-    { name: 'Juan Pérez', role: 'Operador de Muelle', tasksCompleted: 42, efficiency: '96%', status: 'Excelente' },
-    { name: 'Sonia Gómez', role: 'Encargada de Inventario', tasksCompleted: 38, efficiency: '92%', status: 'Óptimo' },
-    { name: 'Carlos Mendoza', role: 'Administrador (Gerente)', tasksCompleted: 65, efficiency: '99%', status: 'Sobresaliente' },
+    { 
+      id: 'OP-01',
+      name: 'Juan Pérez', 
+      role: 'Operador de Muelle', 
+      tasksCompleted: 42, 
+      efficiency: '96%', 
+      status: 'Excelente',
+      hourlyLog: [
+        { time: '08:15 a.m.', type: 'Recepción Muelle', detail: 'Ingreso Camión SGT-881 (250 ítems)', location: 'Muelle de Carga' },
+        { time: '09:40 a.m.', type: 'Escaneo RFID', detail: 'Validación de 18 Cámaras Domo 4K', location: 'Muelle de Carga' },
+        { time: '11:10 a.m.', type: 'Despacho Stock', detail: 'Salida de 2 unidades Cámara IP Domo 4K', location: 'Bodega Principal' },
+        { time: '02:15 p.m.', type: 'Auditoría', detail: 'Conteo de seguridad en Estante A1', location: 'Madefront Ferretería' },
+      ]
+    },
+    { 
+      id: 'OP-02',
+      name: 'Sonia Gómez', 
+      role: 'Encargada de Inventario', 
+      tasksCompleted: 38, 
+      efficiency: '92%', 
+      status: 'Óptimo',
+      hourlyLog: [
+        { time: '08:30 a.m.', type: 'Codificación RFID', detail: 'Grabar y pegar 45 tags para Lectores ZKTeco', location: 'Madefront Ferretería' },
+        { time: '10:15 a.m.', type: 'Alta de Producto', detail: 'Registro inicial de Taladro Percutor 800W', location: 'Bodega Principal' },
+        { time: '01:45 p.m.', type: 'Control Mermas', detail: 'Revisión discrepancia en Estante B3', location: 'Madefront Ferretería' },
+      ]
+    },
+    { 
+      id: 'OP-03',
+      name: 'Carlos Mendoza', 
+      role: 'Administrador (Gerente)', 
+      tasksCompleted: 65, 
+      efficiency: '99%', 
+      status: 'Sobresaliente',
+      hourlyLog: [
+        { time: '07:45 a.m.', type: 'Apertura Sistema', detail: 'Verificación Middleware y Antenas RFID', location: 'General' },
+        { time: '09:15 a.m.', type: 'Autorización', detail: 'Aprobación de ingreso camión PO-44102', location: 'Muelle de Carga' },
+        { time: '02:40 p.m.', type: 'Recepción Muelle', detail: 'Confirmación camión WXYZ-12 (50 ítems)', location: 'Muelle de Carga' },
+        { time: '04:00 p.m.', type: 'Reporte Gerencial', detail: 'Exportación de analítica de ventas', location: 'ERP Panel' },
+      ]
+    },
   ]);
 
   const [cycleTimes] = useState([
@@ -457,6 +496,64 @@ export default function ZonikaApp() {
         <div className="fixed top-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-cyan-300 animate-bounce">
           <CheckCircle2 className="w-5 h-5" />
           <span>{notification}</span>
+        </div>
+      )}
+
+      {/* MODAL INTERACTIVO: DESGLOSE HORARIO POR OPERADOR */}
+      {selectedOperatorDetails && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl space-y-6 relative overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-start border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-black text-sm">
+                  {selectedOperatorDetails.name.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">{selectedOperatorDetails.name}</h3>
+                  <p className="text-xs text-cyan-400 font-semibold">{selectedOperatorDetails.role} • {selectedOperatorDetails.efficiency} Eficiencia</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedOperatorDetails(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-xl bg-slate-800 hover:bg-slate-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-xs text-slate-400 font-bold uppercase tracking-wider">
+                <span>Línea de Tiempo de Actividad (Hoy)</span>
+                <span className="text-emerald-400 font-mono">{selectedOperatorDetails.tasksCompleted} tareas procesadas</span>
+              </div>
+
+              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                {selectedOperatorDetails.hourlyLog.map((log, index) => (
+                  <div key={index} className="flex gap-4 items-start bg-[#1E293B] border border-slate-800 p-3.5 rounded-2xl text-xs relative">
+                    <div className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded-lg font-mono font-bold shrink-0">
+                      {log.time}
+                    </div>
+                    <div className="space-y-0.5 flex-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-white uppercase text-[11px]">{log.type}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold bg-slate-900 px-2 py-0.5 rounded-md">{log.location}</span>
+                      </div>
+                      <p className="text-slate-300 text-[11px]">{log.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-slate-800 pt-4 flex justify-end">
+              <button 
+                onClick={() => setSelectedOperatorDetails(null)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-5 py-2.5 rounded-xl transition-colors"
+              >
+                Cerrar Desglose
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1248,11 +1345,11 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* MÓDULO DE REPORTES & EXPORTACIÓN CON LAS 5 HERRAMIENTAS ENTERPRISE */}
+          {/* MÓDULO DE REPORTES & EXPORTACIÓN CON DESGLOSE INTERACTIVO POR OPERADOR */}
           {activeTab === 'reports' && hasAccess('reports') && (
             <div className="space-y-8 max-w-6xl mx-auto pb-12">
               
-              {/* ENCABEZADO Y FILTROS AVANZADOS (Herramienta 1) */}
+              {/* ENCABEZADO Y FILTROS AVANZADOS */}
               <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
@@ -1387,10 +1484,50 @@ export default function ZonikaApp() {
                 </div>
               </div>
 
-              {/* GRID CON LAS NUEVAS 4 HERRAMIENTAS ENTERPRISE */}
+              {/* GRID CON LAS HERRAMIENTAS ENTERPRISE */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* 1. Historial de Mermas y Discrepancias */}
+                {/* 1. Productividad por Operador (CON BOTÓN DE VER DESGLOSE) */}
+                <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+                  <div className="flex justify-between items-center border-b border-slate-700/80 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <UserCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-white uppercase tracking-wider">Productividad por Operador</h3>
+                        <p className="text-[10px] text-slate-400">Haz clic para ver la bitácora hora por hora</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2.5">
+                    {operatorProductivity.map((op) => (
+                      <div 
+                        key={op.id} 
+                        onClick={() => setSelectedOperatorDetails(op)}
+                        className="flex justify-between items-center bg-[#0F172A] hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/50 p-3 rounded-xl text-xs cursor-pointer transition-all group"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-400 font-bold flex items-center justify-center text-xs group-hover:bg-cyan-500 group-hover:text-slate-950 transition-colors">
+                            {op.name.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="text-white font-semibold block group-hover:text-cyan-400 transition-colors">{op.name}</span>
+                            <span className="text-[10px] text-slate-400">{op.role} • {op.tasksCompleted} tareas</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            {op.efficiency}
+                          </span>
+                          <Eye className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-colors" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Historial de Mermas y Discrepancias */}
                 <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
                   <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
                     <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
@@ -1410,32 +1547,6 @@ export default function ZonikaApp() {
                         </div>
                         <p className="text-[10px] text-slate-400">Ubicación: {d.location}</p>
                         <p className="text-[10px] text-slate-500 italic">Causa: {d.cause}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. Productividad y Desempeño por Operador */}
-                <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
-                  <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                      <UserCheck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Productividad por Operador</h3>
-                      <p className="text-[10px] text-slate-400">Eficiencia y tareas procesadas en el sistema</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2.5">
-                    {operatorProductivity.map((op, idx) => (
-                      <div key={idx} className="flex justify-between items-center bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs">
-                        <div>
-                          <span className="text-white font-semibold block">{op.name}</span>
-                          <span className="text-[10px] text-slate-400">{op.role} • {op.tasksCompleted} tareas</span>
-                        </div>
-                        <span className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                          {op.efficiency} Eficiencia
-                        </span>
                       </div>
                     ))}
                   </div>
