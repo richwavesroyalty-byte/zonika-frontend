@@ -39,10 +39,10 @@ export default function ZonikaApp() {
 
   // Estado para el Muelle de Carga & Despacho (Camiones)
   const [muelleForm, setMuelleForm] = useState({
-    ordenCompra: '',
-    placaCamion: '',
-    transportadora: '',
-    proveedor: '',
+    ordenCompra: 'PO-98210',
+    placaCamion: 'SGT-442',
+    transportadora: 'TCC / Deprisa',
+    proveedor: 'Ferretería Mayorista SAS',
   });
 
   const [muelleItems, setMuelleItems] = useState([
@@ -57,7 +57,7 @@ export default function ZonikaApp() {
 
   const showNotification = (msg) => {
     setNotification(msg);
-    setTimeout(() => setNotification(null), 3000);
+    setTimeout(() => setNotification(null), 3500);
   };
 
   const handleAddProduct = (e) => {
@@ -104,10 +104,10 @@ export default function ZonikaApp() {
       read: item.expected,
       status: 'Completo ✓'
     })));
-    showNotification('¡Lectura RFID masiva del camión completada con éxito!');
+    showNotification('📡 ¡Lectura RFID masiva completada por las antenas del muelle!');
   };
 
-  // Registro oficial de entrada de camión en muelle hacia Render
+  // 🚀 REGISTRO OFICIAL EN TIEMPO REAL: Actualiza Stock, Movimientos y Backend
   const handleRegisterTruckEntry = async (e) => {
     e.preventDefault();
     if (!muelleForm.ordenCompra || !muelleForm.placaCamion) {
@@ -115,18 +115,46 @@ export default function ZonikaApp() {
       return;
     }
 
+    // 1. Actualizar stock del inventario general sumando lo leído
+    setInventory(prevInv => prevInv.map(invItem => {
+      const match = muelleItems.find(m => m.sku === invItem.id);
+      if (match && match.read > 0) {
+        return {
+          ...invItem,
+          stock: Number(invItem.stock) + Number(match.read),
+          rfidTagged: Number(invItem.rfidTagged) + Number(match.read)
+        };
+      }
+      return invItem;
+    }));
+
+    // 2. Registrar el movimiento automáticamente en la sección de Entradas y Salidas
+    const totalQtyRead = muelleItems.reduce((acc, item) => acc + Number(item.read), 0);
+    const newMov = {
+      id: 'MOV-' + Math.floor(1000 + Math.random() * 9000),
+      type: 'ENTRADA',
+      item: `Recepción Camión PO: ${muelleForm.ordenCompra} (${muelleForm.placaCamion})`,
+      qty: totalQtyRead,
+      user: 'Operador Muelle',
+      time: 'Justo ahora'
+    };
+    setMovements(prev => [newMov, ...prev]);
+
+    // 3. Enviar al backend en Render
     try {
       await fetch('https://zonika-backend.onrender.com/api/muelle-recepcion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...muelleForm, items: muelleItems, timestamp: new Date() })
-      }).catch(() => {});
-
-      showNotification('¡Entrada de mercancía del camión registrada y stock actualizado!');
-      setMuelleForm({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
+      });
+      showNotification('✅ ¡Ingreso confirmado! Stock y movimientos actualizados en tiempo real.');
     } catch (err) {
-      showNotification('¡Entrada registrada correctamente en el muelle!');
+      showNotification('✅ ¡Ingreso registrado y stock actualizado con éxito en tiempo real!');
     }
+
+    // Limpiar formulario y reiniciar lecturas leídas del muelle
+    setMuelleForm({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
+    setMuelleItems(prev => prev.map(i => ({ ...i, read: 0, status: 'Pendiente' })));
   };
 
   return (
@@ -143,14 +171,14 @@ export default function ZonikaApp() {
       {/* Sidebar / Menú Lateral Dark Minimalist */}
       <aside className="w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between p-4 z-10 shrink-0 select-none">
         <div>
-          {/* Logo y Encabezado Original */}
+          {/* Logo y Encabezado */}
           <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-slate-800/80">
             <div className="w-10 h-10 bg-[#1E293B] border border-slate-700 rounded-xl flex items-center justify-center p-1 shadow-inner overflow-hidden">
               <img src={logo} alt="Zonika Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="font-black text-lg text-white tracking-wide leading-none">ZONIKA</h1>
-              <p className="text-[10px] text-cyan-400 font-semibold tracking-widest uppercase mt-0.5">Enterprise RFID Platform</p>
+              <p className="text-[10px] text-cyan-400 font-semibold tracking-widest uppercase mt-0.5">RFID Enterprise</p>
             </div>
           </div>
 
@@ -287,7 +315,7 @@ export default function ZonikaApp() {
       {/* Contenido Central */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120]">
         
-        {/* Barra Superior Llimpia sin Admin */}
+        {/* Barra Superior */}
         <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 z-20 shadow-md">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">ESTADO:</span>
