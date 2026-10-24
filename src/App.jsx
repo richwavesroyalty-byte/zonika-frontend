@@ -24,7 +24,6 @@ export default function ZonikaApp() {
   const [inventorySubTab, setInventorySubTab] = useState('madefront');
   const [notification, setNotification] = useState(null);
 
-  // Estados para Gráfica en Tiempo Real y Panel General Interactivo
   const [liveActivityFlow, setLiveActivityFlow] = useState([15, 28, 42, 35, 60, 50, 75]);
   const [selectedOperatorDate, setSelectedOperatorDate] = useState('2026-10-24');
   const [selectedOperatorDetails, setSelectedOperatorDetails] = useState(null);
@@ -32,7 +31,6 @@ export default function ZonikaApp() {
   const [reportDateRange, setReportDateRange] = useState('month');
   const [reportWarehouseFilter, setReportWarehouseFilter] = useState('all');
 
-  // Simulación de actividad en tiempo real cuando el botón RFID está activo
   useEffect(() => {
     let interval;
     if (isReading) {
@@ -359,37 +357,37 @@ export default function ZonikaApp() {
             </div>
           </div>
           <nav className="space-y-1">
-            {(currentUser.roleKey === 'admin') && (
+            {hasAccess('dashboard') && (
               <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <Activity className="w-4 h-4" /> Panel General
               </button>
             )}
-            {(currentUser.roleKey === 'admin' || currentUser.roleKey === 'bodega') && (
+            {hasAccess('inventory') && (
               <button onClick={() => setActiveTab('inventory')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <Boxes className="w-4 h-4" /> Stock e Inventarios
               </button>
             )}
-            {(currentUser.roleKey === 'admin' || currentUser.roleKey === 'muelle') && (
+            {hasAccess('muelle') && (
               <button onClick={() => setActiveTab('muelle')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <Truck className="w-4 h-4" /> Recepción en Muelle
               </button>
             )}
-            {(currentUser.roleKey === 'admin' || currentUser.roleKey === 'muelle') && (
+            {hasAccess('historial_muelle') && (
               <button onClick={() => setActiveTab('historial_muelle')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <ClipboardList className="w-4 h-4" /> Historial de Muelle
               </button>
             )}
-            {(currentUser.roleKey === 'admin' || currentUser.roleKey === 'bodega') && (
+            {hasAccess('movements') && (
               <button onClick={() => setActiveTab('movements')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <ArrowLeftRight className="w-4 h-4" /> Entradas y Salidas
               </button>
             )}
-            {(currentUser.roleKey === 'admin' || currentUser.roleKey === 'bodega') && (
+            {hasAccess('encoder') && (
               <button onClick={() => setActiveTab('encoder')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <Printer className="w-4 h-4" /> Grabación / Impresión Tag
               </button>
             )}
-            {(currentUser.roleKey === 'admin') && (
+            {hasAccess('reports') && (
               <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <BarChart3 className="w-4 h-4" /> Reportes & Analítica
               </button>
