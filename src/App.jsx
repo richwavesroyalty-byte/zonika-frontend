@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Radio, Cpu, Activity, Play, Square, RefreshCw, CheckCircle2,
-  Boxes, ArrowLeftRight, AlertTriangle, Search, Filter, Plus,
+  Radio, Cpu, Activity, Play, Square, CheckCircle2,
+  Boxes, ArrowLeftRight, AlertTriangle, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
-  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, 
-  Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin, Tag, Barcode,
-  Lock, Mail, LogOut, UserCheck, Shield
+  Trash2, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin,
+  Lock, Mail, LogOut, Shield
 } from 'lucide-react';
 import logoIsotipo from './assets/Logo Isotipo.png';
 
@@ -25,6 +24,19 @@ export default function ZonikaApp() {
   const [selectedWarehouse, setSelectedWarehouse] = useState('Muelle de Carga & Despachos');
   const [inventorySubTab, setInventorySubTab] = useState('madefront');
   const [notification, setNotification] = useState(null);
+
+  // Redireccionar al usuario a una pestaña permitida según su rol al iniciar sesión
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.roleKey === 'muelle') {
+        setActiveTab('muelle');
+      } else if (currentUser.roleKey === 'bodega') {
+        setActiveTab('inventory');
+      } else {
+        setActiveTab('dashboard');
+      }
+    }
+  }, [currentUser]);
 
   // --- BASE DE DATOS LOCAL (LOCALSTORAGE) ---
   const [inventoryMadefront, setInventoryMadefront] = useState(() => {
@@ -93,7 +105,7 @@ export default function ZonikaApp() {
     ];
   });
 
-  // EFFETS LOCALSTORAGE
+  // PERSISTENCIA LOCALSTORAGE
   useEffect(() => {
     localStorage.setItem('zonika_current_user', JSON.stringify(currentUser));
   }, [currentUser]);
@@ -123,15 +135,28 @@ export default function ZonikaApp() {
     setTimeout(() => setNotification(null), 3500);
   };
 
+  // --- VERIFICACIÓN DE PERMISOS ---
+  const hasAccess = (moduleKey) => {
+    if (!currentUser) return false;
+    if (currentUser.roleKey === 'admin') return true; // El admin tiene acceso a TODO
+
+    const rolePermissions = {
+      muelle: ['muelle', 'historial_muelle', 'monitor'],
+      bodega: ['inventory', 'add-product', 'movements', 'encoder', 'monitor']
+    };
+
+    return rolePermissions[currentUser.roleKey]?.includes(moduleKey) || false;
+  };
+
   // --- LÓGICA DE LOGIN ---
   const handleLogin = (e) => {
     e.preventDefault();
     setLoginError('');
 
     const usersList = [
-      { email: 'admin@zonika.com', pass: 'admin123', name: 'Carlos Mendoza', role: 'Administrador', badge: 'ADMIN' },
-      { email: 'muelle@zonika.com', pass: 'muelle123', name: 'Juan Pérez', role: 'Operador de Muelle', badge: 'OPERADOR' },
-      { email: 'bodega@zonika.com', pass: 'bodega123', name: 'Sonia Gómez', role: 'Encargada de Inventario', badge: 'LOGÍSTICA' },
+      { email: 'admin@zonika.com', pass: 'admin123', name: 'Carlos Mendoza', role: 'Administrador', roleKey: 'admin' },
+      { email: 'muelle@zonika.com', pass: 'muelle123', name: 'Juan Pérez', role: 'Operador de Muelle', roleKey: 'muelle' },
+      { email: 'bodega@zonika.com', pass: 'bodega123', name: 'Sonia Gómez', role: 'Encargada de Inventario', roleKey: 'bodega' },
     ];
 
     const match = usersList.find(u => u.email.toLowerCase() === loginForm.email.toLowerCase() && u.pass === loginForm.password);
@@ -150,8 +175,12 @@ export default function ZonikaApp() {
     showNotification('🔒 Sesión cerrada correctamente.');
   };
 
-  // FUNCIONES DE ELIMINACIÓN
+  // ELIMINACIONES
   const handleDeleteMuelleRecord = (id) => {
+    if (currentUser.roleKey !== 'admin') {
+      alert('⚠️ Solo el Administrador tiene autorización para eliminar registros del historial.');
+      return;
+    }
     if (window.confirm(`¿Estás seguro de eliminar el registro de recepción ${id}?`)) {
       setMuelleHistorial(prev => prev.filter(item => item.id !== id));
       showNotification('🗑️ Registro de muelle eliminado correctamente.');
@@ -159,6 +188,10 @@ export default function ZonikaApp() {
   };
 
   const handleDeleteInventoryItem = (id, warehouseType) => {
+    if (currentUser.roleKey !== 'admin') {
+      alert('⚠️ Solo el Administrador tiene autorización para eliminar productos del inventario.');
+      return;
+    }
     if (window.confirm(`¿Estás seguro de eliminar el producto SKU ${id} del inventario?`)) {
       if (warehouseType === 'madefront') {
         setInventoryMadefront(prev => prev.filter(item => item.id !== id));
@@ -170,6 +203,10 @@ export default function ZonikaApp() {
   };
 
   const handleDeleteMovement = (id) => {
+    if (currentUser.roleKey !== 'admin') {
+      alert('⚠️ Solo el Administrador tiene autorización para eliminar movimientos.');
+      return;
+    }
     if (window.confirm(`¿Estás seguro de eliminar el movimiento ${id}?`)) {
       setMovements(prev => prev.filter(item => item.id !== id));
       showNotification('🗑️ Movimiento eliminado.');
@@ -177,6 +214,10 @@ export default function ZonikaApp() {
   };
 
   const handleDeleteEncodedItem = (id) => {
+    if (currentUser.roleKey !== 'admin') {
+      alert('⚠️ Solo el Administrador tiene autorización para eliminar lotes codificados.');
+      return;
+    }
     if (window.confirm(`¿Estás seguro de eliminar este lote de etiquetas codificadas?`)) {
       setEncodedHistory(prev => prev.filter(item => item.id !== id));
       showNotification('🗑️ Lote de etiquetas eliminado.');
@@ -187,15 +228,15 @@ export default function ZonikaApp() {
     const selected = e.target.value;
     setSelectedWarehouse(selected);
 
-    if (selected === 'Madefront Ferretería') {
+    if (selected === 'Madefront Ferretería' && hasAccess('inventory')) {
       setActiveTab('inventory');
       setInventorySubTab('madefront');
       showNotification('🏢 Redirigiendo a Inventario: Madefront Ferretería');
-    } else if (selected === 'Bodega Principal') {
+    } else if (selected === 'Bodega Principal' && hasAccess('inventory')) {
       setActiveTab('inventory');
       setInventorySubTab('bodega');
       showNotification('🏭 Redirigiendo a Inventario: Bodega Principal');
-    } else if (selected === 'Muelle de Carga & Despachos') {
+    } else if (selected === 'Muelle de Carga & Despachos' && hasAccess('muelle')) {
       setActiveTab('muelle');
       showNotification('🚚 Redirigiendo a Muelle de Carga & Despachos');
     }
@@ -376,7 +417,7 @@ export default function ZonikaApp() {
   const totalStockBodega = inventoryBodega.reduce((acc, item) => acc + Number(item.stock), 0);
 
   // =========================================================================
-  // 1. PANTALLA DE LOGIN (SI NO HAY USUARIO AUTENTICADO)
+  // 1. PANTALLA DE LOGIN
   // =========================================================================
   if (!currentUser) {
     return (
@@ -393,7 +434,6 @@ export default function ZonikaApp() {
           
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-emerald-400 to-cyan-500"></div>
 
-          {/* Encabezado Logo */}
           <div className="text-center space-y-3">
             <div className="w-20 h-20 bg-[#1E293B] border border-slate-700/80 rounded-2xl flex items-center justify-center p-3 shadow-inner mx-auto">
               <img src={logoIsotipo} alt="Zonika Isotipo" className="w-full h-full object-contain" />
@@ -405,7 +445,6 @@ export default function ZonikaApp() {
             <p className="text-xs text-slate-400">Plataforma Cloud de Gestión & Control Logístico</p>
           </div>
 
-          {/* Formulario */}
           <form onSubmit={handleLogin} className="space-y-5">
             {loginError && (
               <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs font-semibold text-center">
@@ -451,16 +490,15 @@ export default function ZonikaApp() {
             </button>
           </form>
 
-          {/* Accesos Rápidos de Prueba */}
           <div className="border-t border-slate-800/80 pt-5 space-y-2">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Cuentas de Prueba Rápida:</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Cuentas con Permisos Filtrados:</p>
             <div className="grid grid-cols-3 gap-2">
               <button 
                 type="button" 
                 onClick={() => setLoginForm({ email: 'admin@zonika.com', password: 'admin123' })} 
                 className="bg-slate-800/60 hover:bg-slate-800 text-slate-300 border border-slate-700 p-2 rounded-xl text-[10px] font-bold text-center"
               >
-                Admin
+                Admin (Todo)
               </button>
               <button 
                 type="button" 
@@ -485,7 +523,7 @@ export default function ZonikaApp() {
   }
 
   // =========================================================================
-  // 2. SISTEMA COMPLETO ZONIKA (USUARIO AUTENTICADO)
+  // 2. SISTEMA COMPLETO ZONIKA CON MENÚ RESTRINGIDO POR ROL
   // =========================================================================
   return (
     <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans overflow-hidden">
@@ -500,7 +538,6 @@ export default function ZonikaApp() {
       {/* Sidebar */}
       <aside className="w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between p-4 z-10 shrink-0 select-none">
         <div>
-          {/* Logo Isotipo Grande y Tipografía Nítida */}
           <div className="flex items-center gap-3 px-2 py-4 mb-5 border-b border-slate-800/80">
             <div className="w-14 h-14 bg-[#1E293B] border border-slate-700/80 rounded-2xl flex items-center justify-center p-2 shadow-inner overflow-hidden shrink-0">
               <img src={logoIsotipo} alt="Zonika Isotipo" className="w-full h-full object-contain" />
@@ -522,61 +559,98 @@ export default function ZonikaApp() {
                 onChange={handleWarehouseChange}
                 className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
               >
-                <option value="Madefront Ferretería" className="bg-slate-900">Madefront Ferretería</option>
-                <option value="Bodega Principal" className="bg-slate-900">Bodega Principal</option>
-                <option value="Muelle de Carga & Despachos" className="bg-slate-900">Muelle de Carga & Despachos</option>
+                {hasAccess('inventory') && <option value="Madefront Ferretería" className="bg-slate-900">Madefront Ferretería</option>}
+                {hasAccess('inventory') && <option value="Bodega Principal" className="bg-slate-900">Bodega Principal</option>}
+                {hasAccess('muelle') && <option value="Muelle de Carga & Despachos" className="bg-slate-900">Muelle de Carga & Despachos</option>}
               </select>
             </div>
           </div>
 
+          {/* Menú Dinámico según Permisos */}
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-290px)] pr-1">
+            
             <div>
               <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Operación & Stock</p>
               <nav className="space-y-1">
-                <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <Activity className="w-4 h-4" /> Panel General
-                </button>
-                <button onClick={() => setActiveTab('inventory')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <Boxes className="w-4 h-4" /> Stock e Inventarios
-                </button>
-                <button onClick={() => setActiveTab('historial_muelle')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <ClipboardList className="w-4 h-4" /> Historial de Muelle
-                </button>
-                <button onClick={() => setActiveTab('movements')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <ArrowLeftRight className="w-4 h-4" /> Entradas y Salidas
-                </button>
-                <button onClick={() => setActiveTab('audits')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'audits' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <ShieldAlert className="w-4 h-4" /> Auditorías & Cuadres
-                </button>
+                {hasAccess('dashboard') && (
+                  <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                    <Activity className="w-4 h-4" /> Panel General
+                  </button>
+                )}
+
+                {hasAccess('inventory') && (
+                  <button onClick={() => setActiveTab('inventory')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                    <Boxes className="w-4 h-4" /> Stock e Inventarios
+                  </button>
+                )}
+
+                {hasAccess('muelle') && (
+                  <button onClick={() => setActiveTab('muelle')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                    <Truck className="w-4 h-4" /> Recepción en Muelle
+                  </button>
+                )}
+
+                {hasAccess('historial_muelle') && (
+                  <button onClick={() => setActiveTab('historial_muelle')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                    <ClipboardList className="w-4 h-4" /> Historial de Muelle
+                  </button>
+                )}
+
+                {hasAccess('movements') && (
+                  <button onClick={() => setActiveTab('movements')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                    <ArrowLeftRight className="w-4 h-4" /> Entradas y Salidas
+                  </button>
+                )}
+
+                {hasAccess('audits') && (
+                  <button onClick={() => setActiveTab('audits')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'audits' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                    <ShieldAlert className="w-4 h-4" /> Auditorías & Cuadres
+                  </button>
+                )}
               </nav>
             </div>
 
-            <div>
-              <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Herramientas RFID</p>
-              <nav className="space-y-1">
-                <button onClick={() => setActiveTab('encoder')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <Printer className="w-4 h-4" /> Grabación / Impresión Tag
-                </button>
-                <button onClick={() => setActiveTab('monitor')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'monitor' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <Radio className="w-4 h-4" /> Monitor de Tags (EPC)
-                </button>
-                <button onClick={() => setActiveTab('hardware')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'hardware' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <Cpu className="w-4 h-4" /> Hardware & Antenas
-                </button>
-              </nav>
-            </div>
+            {(hasAccess('encoder') || hasAccess('monitor') || hasAccess('hardware')) && (
+              <div>
+                <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Herramientas RFID</p>
+                <nav className="space-y-1">
+                  {hasAccess('encoder') && (
+                    <button onClick={() => setActiveTab('encoder')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                      <Printer className="w-4 h-4" /> Grabación / Impresión Tag
+                    </button>
+                  )}
+                  {hasAccess('monitor') && (
+                    <button onClick={() => setActiveTab('monitor')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'monitor' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                      <Radio className="w-4 h-4" /> Monitor de Tags (EPC)
+                    </button>
+                  )}
+                  {hasAccess('hardware') && (
+                    <button onClick={() => setActiveTab('hardware')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'hardware' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                      <Cpu className="w-4 h-4" /> Hardware & Antenas
+                    </button>
+                  )}
+                </nav>
+              </div>
+            )}
 
-            <div>
-              <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Sistema & Analítica</p>
-              <nav className="space-y-1">
-                <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <BarChart3 className="w-4 h-4" /> Reportes & Exportación
-                </button>
-                <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'settings' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
-                  <Settings className="w-4 h-4" /> Configuración ERP
-                </button>
-              </nav>
-            </div>
+            {(hasAccess('reports') || hasAccess('settings')) && (
+              <div>
+                <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Sistema & Analítica</p>
+                <nav className="space-y-1">
+                  {hasAccess('reports') && (
+                    <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                      <BarChart3 className="w-4 h-4" /> Reportes & Exportación
+                    </button>
+                  )}
+                  {hasAccess('settings') && (
+                    <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${activeTab === 'settings' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'}`}>
+                      <Settings className="w-4 h-4" /> Configuración ERP
+                    </button>
+                  )}
+                </nav>
+              </div>
+            )}
+
           </div>
         </div>
 
@@ -628,7 +702,7 @@ export default function ZonikaApp() {
         <div className="flex-1 overflow-y-auto p-8">
           
           {/* DASHBOARD */}
-          {activeTab === 'dashboard' && (
+          {activeTab === 'dashboard' && hasAccess('dashboard') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Panel General de Inventarios</h2>
@@ -709,7 +783,7 @@ export default function ZonikaApp() {
           )}
 
           {/* MUELLE */}
-          {activeTab === 'muelle' && (
+          {activeTab === 'muelle' && hasAccess('muelle') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Muelle de Carga & Despacho — Recepción de Camiones</h2>
@@ -802,7 +876,7 @@ export default function ZonikaApp() {
           )}
 
           {/* HISTORIAL DE MUELLE */}
-          {activeTab === 'historial_muelle' && (
+          {activeTab === 'historial_muelle' && hasAccess('historial_muelle') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-center">
                 <div>
@@ -826,7 +900,7 @@ export default function ZonikaApp() {
                 </div>
 
                 {muelleHistorial.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500 text-xs">No hay recepciones registradas aún. Haz clic en "Simular Entrada de Camión RFID" arriba para ver el flujo.</div>
+                  <div className="text-center py-12 text-slate-500 text-xs">No hay recepciones registradas aún.</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
@@ -837,10 +911,10 @@ export default function ZonikaApp() {
                           <th className="py-3 px-4">Placa Camión</th>
                           <th className="py-3 px-4">Transportadora</th>
                           <th className="py-3 px-4">Proveedor</th>
-                          <th className="py-3 px-4 text-center">Total Ítems Leídos</th>
+                          <th className="py-3 px-4 text-center">Total Ítems</th>
                           <th className="py-3 px-4">Operador</th>
                           <th className="py-3 px-4">Fecha y Hora</th>
-                          <th className="py-3 px-4 text-center">Acciones</th>
+                          {currentUser.roleKey === 'admin' && <th className="py-3 px-4 text-center">Acciones</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
@@ -854,15 +928,17 @@ export default function ZonikaApp() {
                             <td className="py-3.5 px-4 text-center font-black text-cyan-400 text-sm">{rec.totalItems}</td>
                             <td className="py-3.5 px-4 text-slate-300 font-semibold">{rec.operator || 'Operador'}</td>
                             <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{rec.timestamp}</td>
-                            <td className="py-3.5 px-4 text-center">
-                              <button 
-                                onClick={() => handleDeleteMuelleRecord(rec.id)}
-                                title="Eliminar registro"
-                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
+                            {currentUser.roleKey === 'admin' && (
+                              <td className="py-3.5 px-4 text-center">
+                                <button 
+                                  onClick={() => handleDeleteMuelleRecord(rec.id)}
+                                  title="Eliminar registro"
+                                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -874,7 +950,7 @@ export default function ZonikaApp() {
           )}
 
           {/* INVENTARIOS */}
-          {activeTab === 'inventory' && (
+          {activeTab === 'inventory' && hasAccess('inventory') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-end">
                 <div>
@@ -911,7 +987,7 @@ export default function ZonikaApp() {
                         <th className="py-3 px-4">Categoría</th>
                         <th className="py-3 px-4 text-center">Stock</th>
                         <th className="py-3 px-4">Ubicación Detallada</th>
-                        <th className="py-3 px-4 text-center">Acciones</th>
+                        {currentUser.roleKey === 'admin' && <th className="py-3 px-4 text-center">Acciones</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
@@ -923,15 +999,17 @@ export default function ZonikaApp() {
                           <td className="py-3.5 px-4 text-slate-400">{item.category}</td>
                           <td className="py-3.5 px-4 text-center font-bold text-white">{item.stock}</td>
                           <td className="py-3.5 px-4 text-slate-400">{item.location}</td>
-                          <td className="py-3.5 px-4 text-center">
-                            <button 
-                              onClick={() => handleDeleteInventoryItem(item.id, inventorySubTab)}
-                              title="Eliminar producto"
-                              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
+                          {currentUser.roleKey === 'admin' && (
+                            <td className="py-3.5 px-4 text-center">
+                              <button 
+                                onClick={() => handleDeleteInventoryItem(item.id, inventorySubTab)}
+                                title="Eliminar producto"
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -941,7 +1019,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {activeTab === 'add-product' && (
+          {activeTab === 'add-product' && hasAccess('inventory') && (
             <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
               <h2 className="text-xl font-black text-white uppercase tracking-wider">Registrar Nuevo Producto en Inventario</h2>
               <form onSubmit={handleAddProduct} className="space-y-4">
@@ -970,7 +1048,7 @@ export default function ZonikaApp() {
           )}
 
           {/* MOVIMIENTOS */}
-          {activeTab === 'movements' && (
+          {activeTab === 'movements' && hasAccess('movements') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Registro de Entradas y Salidas</h2>
@@ -1007,7 +1085,7 @@ export default function ZonikaApp() {
                         <th className="py-3 px-4 text-center">Cantidad</th>
                         <th className="py-3 px-4">Usuario</th>
                         <th className="py-3 px-4">Hora</th>
-                        <th className="py-3 px-4 text-center">Acciones</th>
+                        {currentUser.roleKey === 'admin' && <th className="py-3 px-4 text-center">Acciones</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
@@ -1021,15 +1099,17 @@ export default function ZonikaApp() {
                           <td className="py-3.5 px-4 text-center font-bold text-white">{m.qty}</td>
                           <td className="py-3.5 px-4 text-slate-300 font-semibold">{m.user}</td>
                           <td className="py-3.5 px-4 text-slate-500">{m.time}</td>
-                          <td className="py-3.5 px-4 text-center">
-                            <button 
-                              onClick={() => handleDeleteMovement(m.id)}
-                              title="Eliminar movimiento"
-                              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
+                          {currentUser.roleKey === 'admin' && (
+                            <td className="py-3.5 px-4 text-center">
+                              <button 
+                                onClick={() => handleDeleteMovement(m.id)}
+                                title="Eliminar movimiento"
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -1040,7 +1120,7 @@ export default function ZonikaApp() {
           )}
 
           {/* AUDITORÍAS & DISCREPANCIAS */}
-          {activeTab === 'audits' && (
+          {activeTab === 'audits' && hasAccess('audits') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-center">
                 <div>
@@ -1102,7 +1182,7 @@ export default function ZonikaApp() {
           )}
 
           {/* MÓDULO GRABACIÓN / IMPRESIÓN DE TAGS */}
-          {activeTab === 'encoder' && (
+          {activeTab === 'encoder' && hasAccess('encoder') && (
             <div className="space-y-6 max-w-5xl mx-auto">
               <div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Grabación e Impresión de Tags RFID</h2>
@@ -1185,7 +1265,7 @@ export default function ZonikaApp() {
                         <th className="py-3 px-4">Ubicación Destino</th>
                         <th className="py-3 px-4">Operador</th>
                         <th className="py-3 px-4">Momento</th>
-                        <th className="py-3 px-4 text-center">Acciones</th>
+                        {currentUser.roleKey === 'admin' && <th className="py-3 px-4 text-center">Acciones</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
@@ -1198,15 +1278,17 @@ export default function ZonikaApp() {
                           <td className="py-3.5 px-4 text-slate-300">{item.location}</td>
                           <td className="py-3.5 px-4 text-slate-300 font-semibold">{item.operator || 'Operador'}</td>
                           <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{item.time}</td>
-                          <td className="py-3.5 px-4 text-center">
-                            <button 
-                              onClick={() => handleDeleteEncodedItem(item.id)}
-                              title="Eliminar registro de codificación"
-                              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
+                          {currentUser.roleKey === 'admin' && (
+                            <td className="py-3.5 px-4 text-center">
+                              <button 
+                                onClick={() => handleDeleteEncodedItem(item.id)}
+                                title="Eliminar registro de codificación"
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -1216,7 +1298,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {activeTab === 'monitor' && (
+          {activeTab === 'monitor' && hasAccess('monitor') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <h2 className="text-2xl font-black text-white tracking-tight">Monitor de Lectura de EPCs</h2>
               <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl">
@@ -1238,7 +1320,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {activeTab === 'hardware' && (
+          {activeTab === 'hardware' && hasAccess('hardware') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <h2 className="text-2xl font-black text-white tracking-tight">Hardware & Antenas Conectadas</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1260,7 +1342,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {activeTab === 'reports' && (
+          {activeTab === 'reports' && hasAccess('reports') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <h2 className="text-2xl font-black text-white tracking-tight">Reportes & Exportación</h2>
               <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl">
@@ -1269,7 +1351,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {activeTab === 'settings' && (
+          {activeTab === 'settings' && hasAccess('settings') && (
             <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
               <h2 className="text-xl font-black text-white uppercase tracking-wider">Configuración ERP y Middleware</h2>
               <p className="text-xs text-slate-400">Parámetros de conexión con antenas y servicios en Render.</p>
