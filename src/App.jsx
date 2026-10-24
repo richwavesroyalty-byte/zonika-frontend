@@ -698,7 +698,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* AUDITORÍAS & DISCREPANCIAS (Con Trazabilidad por Ubicación) */}
+          {/* AUDITORÍAS & DISCREPANCIAS (Con Columna de Ubicación Exacta Visible) */}
           {activeTab === 'audits' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-center">
@@ -740,8 +740,11 @@ export default function ZonikaApp() {
                         <tr key={d.id} className="hover:bg-slate-800/50 transition-colors">
                           <td className="py-3.5 px-4 font-mono text-cyan-400 font-bold">{d.id}</td>
                           <td className="py-3.5 px-4 font-semibold text-white">{d.sku} - {d.item}</td>
-                          <td className="py-3.5 px-4 text-cyan-300 font-bold flex items-center gap-1.5 pt-4">
-                            <MapPin className="w-3.5 h-3.5 shrink-0" /> {d.location}
+                          <td className="py-3.5 px-4 text-cyan-300 font-bold">
+                            <div className="flex items-center gap-1.5 bg-[#0F172A] border border-slate-800 px-3 py-2 rounded-xl">
+                              <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                              <span>{d.location}</span>
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 text-center font-bold text-slate-300">{d.expected}</td>
                           <td className="py-3.5 px-4 text-center text-cyan-400 font-bold">{d.rfidCount}</td>
