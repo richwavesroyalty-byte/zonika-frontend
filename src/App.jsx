@@ -35,7 +35,7 @@ export default function ZonikaApp() {
   // Historial de Recepciones de Muelle
   const [muelleHistorial, setMuelleHistorial] = useState([]);
 
-  // Auditorías y discrepancias
+  // Auditorías y discrepancias (Simulador dinámico)
   const [discrepancies, setDiscrepancies] = useState([
     { id: 'DISC-101', sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, cause: 'Posible extravío / Sin etiqueta RFID' },
   ]);
@@ -190,6 +190,17 @@ export default function ZonikaApp() {
     showNotification('✅ ¡Ingreso confirmado y registrado con éxito en tiempo real!');
     setMuelleForm({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
     setMuelleItems(prev => prev.map(i => ({ ...i, read: 0, status: 'Pendiente' })));
+  };
+
+  // Función Simuladora de Auditoría RFID y Discrepancias
+  const handleRunAuditSimulation = () => {
+    // Tomamos aleatoriamente un producto de Madefront para simular una diferencia
+    const simulatedDiscrepancies = [
+      { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, cause: 'Posible extravío / Sin etiqueta RFID' },
+      { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'INV-001', item: 'Lector Biométrico ZKTeco', expected: 45, rfidCount: 47, diff: +2, cause: 'Sobrante detectado por antena secundaria' },
+    ];
+    setDiscrepancies(simulatedDiscrepancies);
+    showNotification('🛰️ ¡Auditoría RFID completada! Se analizaron las existencias con éxito.');
   };
 
   // Cálculo de métricas dinámicas para el Panel General
@@ -458,7 +469,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* OTRAS PESTAÑAS (Muelle, Inventario, Entradas, etc.) */}
+          {/* MUELLE DE CARGA */}
           {activeTab === 'muelle' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
@@ -744,17 +755,37 @@ export default function ZonikaApp() {
             </div>
           )}
 
+          {/* AUDITORÍAS & DISCREPANCIAS (Con Simulador Interactivo) */}
           {activeTab === 'audits' && (
             <div className="space-y-6 max-w-6xl mx-auto">
-              <h2 className="text-2xl font-black text-white tracking-tight">Auditorías & Discrepancias</h2>
-              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-black text-white tracking-tight">Auditorías & Discrepancias RFID</h2>
+                  <p className="text-slate-400 text-xs mt-1 font-medium">Comparativa automática entre el stock teórico del ERP y el conteo físico de antenas.</p>
+                </div>
+                <button 
+                  onClick={handleRunAuditSimulation}
+                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
+                >
+                  <Zap className="w-4 h-4" /> 🛰️ Ejecutar Conteo / Auditoría RFID
+                </button>
+              </div>
+
+              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-400" /> Registro de Discrepancias Detectadas
+                  </h3>
+                  <span className="text-xs text-slate-400 font-mono">Total Alertas: {discrepancies.length}</span>
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider">
                         <th className="py-3 px-4">ID Auditoría</th>
-                        <th className="py-3 px-4">Producto</th>
-                        <th className="py-3 px-4 text-center">Teórico</th>
+                        <th className="py-3 px-4">SKU / Producto</th>
+                        <th className="py-3 px-4 text-center">Stock Teórico (ERP)</th>
                         <th className="py-3 px-4 text-center">RFID Contado</th>
                         <th className="py-3 px-4 text-center">Diferencia</th>
                         <th className="py-3 px-4">Causa Estimada</th>
@@ -764,10 +795,14 @@ export default function ZonikaApp() {
                       {discrepancies.map((d) => (
                         <tr key={d.id} className="hover:bg-slate-800/50 transition-colors">
                           <td className="py-3.5 px-4 font-mono text-cyan-400 font-bold">{d.id}</td>
-                          <td className="py-3.5 px-4 font-semibold text-white">{d.item}</td>
-                          <td className="py-3.5 px-4 text-center font-bold">{d.expected}</td>
+                          <td className="py-3.5 px-4 font-semibold text-white">{d.sku} - {d.item}</td>
+                          <td className="py-3.5 px-4 text-center font-bold text-slate-300">{d.expected}</td>
                           <td className="py-3.5 px-4 text-center text-cyan-400 font-bold">{d.rfidCount}</td>
-                          <td className="py-3.5 px-4 text-center text-amber-400 font-black">{d.diff}</td>
+                          <td className="py-3.5 px-4 text-center">
+                            <span className={`px-2.5 py-1 rounded-md font-black ${d.diff < 0 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'}`}>
+                              {d.diff > 0 ? `+${d.diff}` : d.diff}
+                            </span>
+                          </td>
                           <td className="py-3.5 px-4 text-slate-400">{d.cause}</td>
                         </tr>
                       ))}
