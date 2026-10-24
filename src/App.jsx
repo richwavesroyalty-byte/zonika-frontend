@@ -68,19 +68,11 @@ export default function ZonikaApp() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Manejador inteligente del selector de Sede / Almacén
+  // Selector superior independiente (Solo cambia el contexto de sede sin alterar la pestaña activa)
   const handleWarehouseChange = (e) => {
     const selected = e.target.value;
     setSelectedWarehouse(selected);
-
-    if (selected === 'Madefront Ferretería') {
-      setActiveTab('inventory');
-      setInventorySubTab('madefront');
-      showNotification('🏢 Cambiando a Sede: Madefront Ferretería');
-    } else if (selected === 'Muelle de Carga & Despachos') {
-      setActiveTab('muelle');
-      showNotification('🚚 Cambiando a Sede: Muelle de Carga & Despachos');
-    }
+    showNotification(`📍 Sede activa cambiada a: ${selected}`);
   };
 
   const handleAddProduct = (e) => {
@@ -224,7 +216,7 @@ export default function ZonikaApp() {
             </div>
           </div>
 
-          {/* Sede Activa */}
+          {/* Sede Activa (Selector Superior Independiente) */}
           <div className="mb-6 px-2">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
               Sede / Almacén Activo
@@ -237,16 +229,25 @@ export default function ZonikaApp() {
                 className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
               >
                 <option value="Madefront Ferretería" className="bg-slate-900">Madefront Ferretería</option>
+                <option value="Bodega Principal" className="bg-slate-900">Bodega Principal</option>
                 <option value="Muelle de Carga & Despachos" className="bg-slate-900">Muelle de Carga & Despachos</option>
               </select>
             </div>
           </div>
 
-          {/* Navegación Completa (Sin botón redundante de muelle) */}
+          {/* Navegación por Menú Lateral */}
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-230px)] pr-1">
             <div>
               <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Operación & Stock</p>
               <nav className="space-y-1">
+                <button 
+                  onClick={() => setActiveTab('muelle')} 
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
+                    activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                  }`}
+                >
+                  <Truck className="w-4 h-4" /> Muelle de Carga & Despacho
+                </button>
                 <button 
                   onClick={() => setActiveTab('historial_muelle')} 
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
@@ -264,7 +265,7 @@ export default function ZonikaApp() {
                   <Activity className="w-4 h-4" /> Panel General
                 </button>
                 <button 
-                  onClick={() => { setActiveTab('inventory'); setSelectedWarehouse('Madefront Ferretería'); setInventorySubTab('madefront'); }} 
+                  onClick={() => setActiveTab('inventory')} 
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
                     activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
                   }`}
@@ -385,7 +386,7 @@ export default function ZonikaApp() {
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Muelle de Carga & Despacho — Recepción de Camiones</h2>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Registro de ingresos de camiones, órdenes de compra y lectura RFID masiva en tiempo real.</p>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Registro de ingresos de camiones, órdenes de compra y lectura RFID masiva en tiempo real. (Sede actual: {selectedWarehouse})</p>
               </div>
 
               {/* Formulario de Ingreso de Camión */}
@@ -581,7 +582,7 @@ export default function ZonikaApp() {
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Panel General de Inventarios</h2>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión en tiempo real de {selectedWarehouse}.</p>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión en tiempo real (Sede activa: {selectedWarehouse}).</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
@@ -615,7 +616,7 @@ export default function ZonikaApp() {
               <div className="flex justify-between items-end">
                 <div>
                   <h2 className="text-2xl font-black text-white tracking-tight">Control de Stock e Inventarios</h2>
-                  <p className="text-slate-400 text-xs mt-1 font-medium">Gestión separada por ubicación física para mayor precisión.</p>
+                  <p className="text-slate-400 text-xs mt-1 font-medium">Gestión separada por ubicación física para mayor precisión. (Contexto: {selectedWarehouse})</p>
                 </div>
                 <button onClick={() => setActiveTab('add-product')} className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg">
                   <Plus className="w-4 h-4" /> Registrar Nuevo Producto
