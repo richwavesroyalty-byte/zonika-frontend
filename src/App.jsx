@@ -8,7 +8,7 @@ import {
 import logo from './assets/Logo Zonika.png';
 
 export default function ZonikaApp() {
-  const [activeTab, setActiveTab] = useState('encoder');
+  const [activeTab, setActiveTab] = useState('historial_muelle');
   const [isReading, setIsReading] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState('Muelle de Carga & Despachos');
   const [inventorySubTab, setInventorySubTab] = useState('madefront'); // 'madefront' o 'bodega'
@@ -32,8 +32,11 @@ export default function ZonikaApp() {
     { id: 'MOV-502', type: 'SALIDA', item: 'Cámara IP Domo 4K', qty: 2, user: 'Operador Muelle', time: 'Hace 45 min' },
   ]);
 
-  // Historial de Recepciones de Muelle
-  const [muelleHistorial, setMuelleHistorial] = useState([]);
+  // Historial de Recepciones de Muelle (Con datos simulados iniciales para visualización inmediata)
+  const [muelleHistorial, setMuelleHistorial] = useState([
+    { id: 'REC-892', ordenCompra: 'PO-44102', placaCamion: 'SGT-881', transportadora: 'TCC Carga', proveedor: 'Ferretería Mayorista SAS', timestamp: '23/10/2026, 09:15:22 a.m.', totalItems: 250 },
+    { id: 'REC-304', ordenCompra: 'PO-98210', placaCamion: 'WXYZ-12', transportadora: 'Deprisa Logística', proveedor: 'Seguridad Global Andina', timestamp: '23/10/2026, 02:40:10 p.m.', totalItems: 50 },
+  ]);
 
   // Auditorías y discrepancias
   const [discrepancies, setDiscrepancies] = useState([
@@ -57,7 +60,7 @@ export default function ZonikaApp() {
   const [newProduct, setNewProduct] = useState({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
   const [newMovement, setNewMovement] = useState({ type: 'ENTRADA', item: '', qty: 1 });
 
-  // Estado para el Módulo de Grabación / Impresión de Tags (con historial local en la misma pestaña)
+  // Estado para el Módulo de Grabación / Impresión de Tags
   const [encoderForm, setEncoderForm] = useState({
     sku: 'INV-005',
     productName: 'Cerradura Inteligente Biométrica',
@@ -189,6 +192,27 @@ export default function ZonikaApp() {
     setMuelleItems(prev => prev.map(i => ({ ...i, read: 0, status: 'Pendiente' })));
   };
 
+  // Función para simular un ingreso rápido de camión directo en el Historial de Muelle
+  const handleSimulateTruckEntryInHistory = () => {
+    const randomPOs = ['PO-77312', 'PO-99104', 'PO-55420', 'PO-11029'];
+    const randomPlacas = ['KTM-992', 'SGT-332', 'TRX-551', 'BOG-108'];
+    const randomTransp = ['TCC Carga', 'Deprisa', 'Servientrega', 'Logística Express'];
+    const randomProv = ['Ferretería Industrial del Norte', 'Suministros Globales SAS', 'Importadora de Herramientas'];
+
+    const simulatedTruck = {
+      id: 'REC-' + Math.floor(100 + Math.random() * 900),
+      ordenCompra: randomPOs[Math.floor(Math.random() * randomPOs.length)],
+      placaCamion: randomPlacas[Math.floor(Math.random() * randomPlacas.length)],
+      transportadora: randomTransp[Math.floor(Math.random() * randomTransp.length)],
+      proveedor: randomProv[Math.floor(Math.random() * randomProv.length)],
+      timestamp: new Date().toLocaleString(),
+      totalItems: Math.floor(80 + Math.random() * 400)
+    };
+
+    setMuelleHistorial(prev => [simulatedTruck, ...prev]);
+    showNotification(`🚚 ¡Simulacro exitoso! Camión ${simulatedTruck.placaCamion} registrado en el historial.`);
+  };
+
   const handleRunAuditSimulation = () => {
     const simulatedDiscrepancies = [
       { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, location: 'Madefront Ferretería - Estante B3', cause: 'Posible extravío / Sin etiqueta RFID' },
@@ -198,7 +222,6 @@ export default function ZonikaApp() {
     showNotification('🛰️ ¡Auditoría RFID completada con trazabilidad por ubicación!');
   };
 
-  // Grabación e Impresión filtrada dentro de la misma pestaña (sin redirección externa)
   const handleEncodeAndPrint = (e) => {
     e.preventDefault();
     if (!encoderForm.sku || !encoderForm.productName || !encoderForm.quantity) {
@@ -217,14 +240,12 @@ export default function ZonikaApp() {
       status: 'Optimal'
     };
 
-    // Añadir al inventario correspondiente
     if (encoderForm.targetWarehouse === 'Madefront Ferretería') {
       setInventoryMadefront(prev => [newItem, ...prev]);
     } else {
       setInventoryBodega(prev => [newItem, ...prev]);
     }
 
-    // Añadir al historial local de la misma pestaña
     const newEncodedRecord = {
       id: 'ENC-' + Math.floor(100 + Math.random() * 900),
       sku: encoderForm.sku,
@@ -238,7 +259,6 @@ export default function ZonikaApp() {
 
     showNotification(`🖨️ ¡${encoderForm.quantity} Tags RFID codificados con éxito en este espacio!`);
     
-    // Generar nuevo EPC aleatorio para el siguiente registro sin salir de la pestaña
     setEncoderForm({
       ...encoderForm,
       sku: 'INV-' + Math.floor(100 + Math.random() * 900),
@@ -494,7 +514,7 @@ export default function ZonikaApp() {
                 </form>
               </div>
 
-              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
                     <PackageCheck className="w-4 h-4 text-cyan-400" /> Mercancía Detectada por Antena RFID (Muelle)
@@ -549,12 +569,22 @@ export default function ZonikaApp() {
             </div>
           )}
 
+          {/* HISTORIAL DE MUELLE (Con Simulador de Recepción en Vivo) */}
           {activeTab === 'historial_muelle' && (
             <div className="space-y-6 max-w-6xl mx-auto">
-              <div>
-                <h2 className="text-2xl font-black text-white tracking-tight">Historial de Recepciones en Muelle</h2>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Registro detallado de todos los camiones procesados e ingresados al inventario.</p>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-black text-white tracking-tight">Historial de Recepciones en Muelle</h2>
+                  <p className="text-slate-400 text-xs mt-1 font-medium">Registro detallado de todos los camiones procesados e ingresados al inventario.</p>
+                </div>
+                <button 
+                  onClick={handleSimulateTruckEntryInHistory} 
+                  className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-cyan-500/20 transition-all"
+                >
+                  <Truck className="w-4 h-4" /> 🚚 Simular Entrada de Camión RFID
+                </button>
               </div>
+
               <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
@@ -562,8 +592,9 @@ export default function ZonikaApp() {
                   </h3>
                   <span className="text-xs text-slate-400 font-mono">Total Registros: {muelleHistorial.length}</span>
                 </div>
+
                 {muelleHistorial.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500 text-xs">No hay recepciones registradas aún. Ingresa un camión desde el Muelle de Carga para ver el historial real.</div>
+                  <div className="text-center py-12 text-slate-500 text-xs">No hay recepciones registradas aún. Haz clic en "Simular Entrada de Camión RFID" arriba para ver el flujo.</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
@@ -804,7 +835,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* MÓDULO GRABACIÓN / IMPRESIÓN DE TAGS (Filtrado y Operativo en el mismo espacio) */}
+          {/* MÓDULO GRABACIÓN / IMPRESIÓN DE TAGS */}
           {activeTab === 'encoder' && (
             <div className="space-y-6 max-w-5xl mx-auto">
               <div>
@@ -812,7 +843,6 @@ export default function ZonikaApp() {
                 <p className="text-slate-400 text-xs mt-1 font-medium">Estación de codificación de chips EPC y generación de etiquetas UHF para nuevos artículos.</p>
               </div>
 
-              {/* Formulario de Codificación */}
               <div className="bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-700/80 pb-4">
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
@@ -828,92 +858,48 @@ export default function ZonikaApp() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">SKU / Código del Producto</label>
-                      <input 
-                        type="text" 
-                        value={encoderForm.sku} 
-                        onChange={(e)=>setEncoderForm({...encoderForm, sku: e.target.value})} 
-                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono font-bold" 
-                        required 
-                      />
+                      <input type="text" value={encoderForm.sku} onChange={(e)=>setEncoderForm({...encoderForm, sku: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono font-bold" required />
                     </div>
                     <div>
                       <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Nombre del Producto</label>
-                      <input 
-                        type="text" 
-                        value={encoderForm.productName} 
-                        onChange={(e)=>setEncoderForm({...encoderForm, productName: e.target.value})} 
-                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-semibold" 
-                        required 
-                      />
+                      <input type="text" value={encoderForm.productName} onChange={(e)=>setEncoderForm({...encoderForm, productName: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-semibold" required />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Cantidad de Tags a Imprimir</label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        value={encoderForm.quantity} 
-                        onChange={(e)=>setEncoderForm({...encoderForm, quantity: e.target.value})} 
-                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-bold" 
-                        required 
-                      />
+                      <input type="number" min="1" value={encoderForm.quantity} onChange={(e)=>setEncoderForm({...encoderForm, quantity: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-bold" required />
                     </div>
                     <div>
                       <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Almacén Destino</label>
-                      <select 
-                        value={encoderForm.targetWarehouse} 
-                        onChange={(e)=>setEncoderForm({...encoderForm, targetWarehouse: e.target.value})} 
-                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-bold cursor-pointer"
-                      >
+                      <select value={encoderForm.targetWarehouse} onChange={(e)=>setEncoderForm({...encoderForm, targetWarehouse: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-bold cursor-pointer">
                         <option value="Madefront Ferretería">Madefront Ferretería</option>
                         <option value="Bodega Principal">Bodega Principal</option>
                       </select>
                     </div>
                     <div>
                       <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Ubicación / Estante</label>
-                      <input 
-                        type="text" 
-                        value={encoderForm.locationDetail} 
-                        onChange={(e)=>setEncoderForm({...encoderForm, locationDetail: e.target.value})} 
-                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" 
-                        required 
-                      />
+                      <input type="text" value={encoderForm.locationDetail} onChange={(e)=>setEncoderForm({...encoderForm, locationDetail: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" required />
                     </div>
                   </div>
 
                   <div>
                     <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Código EPC Hexadecimal Autogenerado (Chip UHF)</label>
                     <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        value={encoderForm.generatedEpc} 
-                        readOnly 
-                        className="w-full bg-[#0F172A]/80 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-cyan-400 font-mono font-bold select-all" 
-                      />
-                      <button 
-                        type="button" 
-                        onClick={()=>setEncoderForm({...encoderForm, generatedEpc: 'E28068940000' + Math.floor(10000000 + Math.random() * 90000000)})} 
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 rounded-xl border border-slate-700 shrink-0 transition-colors"
-                      >
-                        Regenerar EPC
-                      </button>
+                      <input type="text" value={encoderForm.generatedEpc} readOnly className="w-full bg-[#0F172A]/80 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-cyan-400 font-mono font-bold select-all" />
+                      <button type="button" onClick={()=>setEncoderForm({...encoderForm, generatedEpc: 'E28068940000' + Math.floor(10000000 + Math.random() * 90000000)})} className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 rounded-xl border border-slate-700 shrink-0 transition-colors">Regenerar EPC</button>
                     </div>
                   </div>
 
                   <div className="pt-4 flex justify-end">
-                    <button 
-                      type="submit" 
-                      className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs px-6 py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 uppercase tracking-wider"
-                    >
+                    <button type="submit" className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs px-6 py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 uppercase tracking-wider">
                       <Printer className="w-4 h-4" /> Grabar Chip EPC e Imprimir Etiqueta
                     </button>
                   </div>
                 </form>
               </div>
 
-              {/* Historial Local Filtrado en la misma pestaña */}
               <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
