@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Radio, Cpu, Activity, Play, Square, RefreshCw, CheckCircle2,
   Boxes, ArrowLeftRight, AlertTriangle, Search, Filter, Plus,
@@ -14,29 +14,41 @@ export default function ZonikaApp() {
   const [inventorySubTab, setInventorySubTab] = useState('madefront'); // 'madefront' o 'bodega'
   const [notification, setNotification] = useState(null);
 
-  // 1. Inventario exclusivo de Madefront Ferretería
-  const [inventoryMadefront, setInventoryMadefront] = useState([
-    { id: 'INV-001', epc: 'E280689400004001F82B', name: 'Lector Biométrico ZKTeco', category: 'Seguridad', stock: 45, rfidTagged: 45, location: 'Madefront Ferretería - Estante A1', status: 'Optimal' },
-    { id: 'INV-002', epc: 'E280689400004001F82C', name: 'Cámara IP Domo 4K', category: 'CCTV', stock: 12, rfidTagged: 10, location: 'Madefront Ferretería - Estante B3', status: 'Low' },
-  ]);
+  // 1. Inventario exclusivo de Madefront Ferretería (con localStorage)
+  const [inventoryMadefront, setInventoryMadefront] = useState(() => {
+    const saved = localStorage.getItem('zonika_inv_madefront');
+    return saved ? JSON.parse(saved) : [
+      { id: 'INV-001', epc: 'E280689400004001F82B', name: 'Lector Biométrico ZKTeco', category: 'Seguridad', stock: 45, rfidTagged: 45, location: 'Madefront Ferretería - Estante A1', status: 'Optimal' },
+      { id: 'INV-002', epc: 'E280689400004001F82C', name: 'Cámara IP Domo 4K', category: 'CCTV', stock: 12, rfidTagged: 10, location: 'Madefront Ferretería - Estante B3', status: 'Low' },
+    ];
+  });
 
-  // 2. Inventario exclusivo de Bodega Principal
-  const [inventoryBodega, setInventoryBodega] = useState([
-    { id: 'BOD-501', epc: 'E280689400005009A11F', name: 'Taladro Percutor Industrial 800W', category: 'Herramientas', stock: 120, rfidTagged: 1200, location: 'Bodega Principal - Pasillo 3', status: 'Optimal' },
-    { id: 'BOD-502', epc: 'E280689400005009A120', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', stock: 1200, rfidTagged: 1200, location: 'Bodega Principal - Caja 05', status: 'Optimal' },
-  ]);
+  // 2. Inventario exclusivo de Bodega Principal (con localStorage)
+  const [inventoryBodega, setInventoryBodega] = useState(() => {
+    const saved = localStorage.getItem('zonika_inv_bodega');
+    return saved ? JSON.parse(saved) : [
+      { id: 'BOD-501', epc: 'E280689400005009A11F', name: 'Taladro Percutor Industrial 800W', category: 'Herramientas', stock: 120, rfidTagged: 1200, location: 'Bodega Principal - Pasillo 3', status: 'Optimal' },
+      { id: 'BOD-502', epc: 'E280689400005009A120', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', stock: 1200, rfidTagged: 1200, location: 'Bodega Principal - Caja 05', status: 'Optimal' },
+    ];
+  });
 
-  // Movimientos
-  const [movements, setMovements] = useState([
-    { id: 'MOV-501', type: 'ENTRADA', item: 'Lector Biométrico ZKTeco', qty: 15, user: 'Operador', time: 'Hace 10 min' },
-    { id: 'MOV-502', type: 'SALIDA', item: 'Cámara IP Domo 4K', qty: 2, user: 'Operador Muelle', time: 'Hace 45 min' },
-  ]);
+  // Movimientos (con localStorage)
+  const [movements, setMovements] = useState(() => {
+    const saved = localStorage.getItem('zonika_movements');
+    return saved ? JSON.parse(saved) : [
+      { id: 'MOV-501', type: 'ENTRADA', item: 'Lector Biométrico ZKTeco', qty: 15, user: 'Operador', time: 'Hace 10 min' },
+      { id: 'MOV-502', type: 'SALIDA', item: 'Cámara IP Domo 4K', qty: 2, user: 'Operador Muelle', time: 'Hace 45 min' },
+    ];
+  });
 
-  // Historial de Recepciones de Muelle (Con datos simulados iniciales para visualización inmediata)
-  const [muelleHistorial, setMuelleHistorial] = useState([
-    { id: 'REC-892', ordenCompra: 'PO-44102', placaCamion: 'SGT-881', transportadora: 'TCC Carga', proveedor: 'Ferretería Mayorista SAS', timestamp: '23/10/2026, 09:15:22 a.m.', totalItems: 250 },
-    { id: 'REC-304', ordenCompra: 'PO-98210', placaCamion: 'WXYZ-12', transportadora: 'Deprisa Logística', proveedor: 'Seguridad Global Andina', timestamp: '23/10/2026, 02:40:10 p.m.', totalItems: 50 },
-  ]);
+  // Historial de Recepciones de Muelle (con localStorage)
+  const [muelleHistorial, setMuelleHistorial] = useState(() => {
+    const saved = localStorage.getItem('zonika_muelle_historial');
+    return saved ? JSON.parse(saved) : [
+      { id: 'REC-892', ordenCompra: 'PO-44102', placaCamion: 'SGT-881', transportadora: 'TCC Carga', proveedor: 'Ferretería Mayorista SAS', timestamp: '23/10/2026, 09:15:22 a.m.', totalItems: 250 },
+      { id: 'REC-304', ordenCompra: 'PO-98210', placaCamion: 'WXYZ-12', transportadora: 'Deprisa Logística', proveedor: 'Seguridad Global Andina', timestamp: '23/10/2026, 02:40:10 p.m.', totalItems: 50 },
+    ];
+  });
 
   // Auditorías y discrepancias
   const [discrepancies, setDiscrepancies] = useState([
@@ -60,7 +72,7 @@ export default function ZonikaApp() {
   const [newProduct, setNewProduct] = useState({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
   const [newMovement, setNewMovement] = useState({ type: 'ENTRADA', item: '', qty: 1 });
 
-  // Estado para el Módulo de Grabación / Impresión de Tags
+  // Estado para el Módulo de Grabación / Impresión de Tags (con localStorage)
   const [encoderForm, setEncoderForm] = useState({
     sku: 'INV-005',
     productName: 'Cerradura Inteligente Biométrica',
@@ -70,13 +82,70 @@ export default function ZonikaApp() {
     generatedEpc: 'E28068940000' + Math.floor(10000000 + Math.random() * 90000000)
   });
 
-  const [encodedHistory, setEncodedHistory] = useState([
-    { id: 'ENC-901', sku: 'INV-001', name: 'Lector Biométrico ZKTeco', qty: 45, epc: 'E280689400004001F82B', location: 'Madefront Ferretería - Estante A1', time: 'Hace 1 hora' }
-  ]);
+  const [encodedHistory, setEncodedHistory] = useState(() => {
+    const saved = localStorage.getItem('zonika_encoded_history');
+    return saved ? JSON.parse(saved) : [
+      { id: 'ENC-901', sku: 'INV-001', name: 'Lector Biométrico ZKTeco', qty: 45, epc: 'E280689400004001F82B', location: 'Madefront Ferretería - Estante A1', time: 'Hace 1 hora' }
+    ];
+  });
+
+  // Sincronizar con localStorage automáticamente al cambiar los estados
+  useEffect(() => {
+    localStorage.setItem('zonika_inv_madefront', JSON.stringify(inventoryMadefront));
+  }, [inventoryMadefront]);
+
+  useEffect(() => {
+    localStorage.setItem('zonika_inv_bodega', JSON.stringify(inventoryBodega));
+  }, [inventoryBodega]);
+
+  useEffect(() => {
+    localStorage.setItem('zonika_movements', JSON.stringify(movements));
+  }, [movements]);
+
+  useEffect(() => {
+    localStorage.setItem('zonika_muelle_historial', JSON.stringify(muelleHistorial));
+  }, [muelleHistorial]);
+
+  useEffect(() => {
+    localStorage.setItem('zonika_encoded_history', JSON.stringify(encodedHistory));
+  }, [encodedHistory]);
 
   const showNotification = (msg) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
+  };
+
+  // Funciones de Eliminación (Delete)
+  const handleDeleteMuelleRecord = (id) => {
+    if (window.confirm(`¿Estás seguro de eliminar el registro de recepción ${id}?`)) {
+      setMuelleHistorial(prev => prev.filter(item => item.id !== id));
+      showNotification('🗑️ Registro de muelle eliminado correctamente.');
+    }
+  };
+
+  const handleDeleteInventoryItem = (id, warehouseType) => {
+    if (window.confirm(`¿Estás seguro de eliminar el producto SKU ${id} del inventario?`)) {
+      if (warehouseType === 'madefront') {
+        setInventoryMadefront(prev => prev.filter(item => item.id !== id));
+      } else {
+        setInventoryBodega(prev => prev.filter(item => item.id !== id));
+      }
+      showNotification('🗑️ Producto eliminado del inventario.');
+    }
+  };
+
+  const handleDeleteMovement = (id) => {
+    if (window.confirm(`¿Estás seguro de eliminar el movimiento ${id}?`)) {
+      setMovements(prev => prev.filter(item => item.id !== id));
+      showNotification('🗑️ Movimiento eliminado.');
+    }
+  };
+
+  const handleDeleteEncodedItem = (id) => {
+    if (window.confirm(`¿Estás seguro de eliminar este lote de etiquetas codificadas?`)) {
+      setEncodedHistory(prev => prev.filter(item => item.id !== id));
+      showNotification('🗑️ Lote de etiquetas eliminado.');
+    }
   };
 
   const handleWarehouseChange = (e) => {
@@ -192,7 +261,6 @@ export default function ZonikaApp() {
     setMuelleItems(prev => prev.map(i => ({ ...i, read: 0, status: 'Pendiente' })));
   };
 
-  // Función para simular un ingreso rápido de camión directo en el Historial de Muelle
   const handleSimulateTruckEntryInHistory = () => {
     const randomPOs = ['PO-77312', 'PO-99104', 'PO-55420', 'PO-11029'];
     const randomPlacas = ['KTM-992', 'SGT-332', 'TRX-551', 'BOG-108'];
@@ -569,7 +637,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* HISTORIAL DE MUELLE (Con Simulador de Recepción en Vivo) */}
+          {/* HISTORIAL DE MUELLE (Con opción de Borrar) */}
           {activeTab === 'historial_muelle' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-center">
@@ -607,6 +675,7 @@ export default function ZonikaApp() {
                           <th className="py-3 px-4">Proveedor</th>
                           <th className="py-3 px-4 text-center">Total Ítems Leídos</th>
                           <th className="py-3 px-4">Fecha y Hora</th>
+                          <th className="py-3 px-4 text-center">Acciones</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
@@ -619,6 +688,15 @@ export default function ZonikaApp() {
                             <td className="py-3.5 px-4 text-slate-300">{rec.proveedor}</td>
                             <td className="py-3.5 px-4 text-center font-black text-cyan-400 text-sm">{rec.totalItems}</td>
                             <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{rec.timestamp}</td>
+                            <td className="py-3.5 px-4 text-center">
+                              <button 
+                                onClick={() => handleDeleteMuelleRecord(rec.id)}
+                                title="Eliminar registro"
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -629,6 +707,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
+          {/* INVENTARIOS (Con opción de Borrar) */}
           {activeTab === 'inventory' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-end">
@@ -666,6 +745,7 @@ export default function ZonikaApp() {
                         <th className="py-3 px-4">Categoría</th>
                         <th className="py-3 px-4 text-center">Stock</th>
                         <th className="py-3 px-4">Ubicación Detallada</th>
+                        <th className="py-3 px-4 text-center">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
@@ -677,6 +757,15 @@ export default function ZonikaApp() {
                           <td className="py-3.5 px-4 text-slate-400">{item.category}</td>
                           <td className="py-3.5 px-4 text-center font-bold text-white">{item.stock}</td>
                           <td className="py-3.5 px-4 text-slate-400">{item.location}</td>
+                          <td className="py-3.5 px-4 text-center">
+                            <button 
+                              onClick={() => handleDeleteInventoryItem(item.id, inventorySubTab)}
+                              title="Eliminar producto"
+                              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -714,6 +803,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
+          {/* MOVIMIENTOS (Con opción de Borrar) */}
           {activeTab === 'movements' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
@@ -751,6 +841,7 @@ export default function ZonikaApp() {
                         <th className="py-3 px-4 text-center">Cantidad</th>
                         <th className="py-3 px-4">Usuario</th>
                         <th className="py-3 px-4">Hora</th>
+                        <th className="py-3 px-4 text-center">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
@@ -764,6 +855,15 @@ export default function ZonikaApp() {
                           <td className="py-3.5 px-4 text-center font-bold text-white">{m.qty}</td>
                           <td className="py-3.5 px-4 text-slate-400">{m.user}</td>
                           <td className="py-3.5 px-4 text-slate-500">{m.time}</td>
+                          <td className="py-3.5 px-4 text-center">
+                            <button 
+                              onClick={() => handleDeleteMovement(m.id)}
+                              title="Eliminar movimiento"
+                              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -835,7 +935,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* MÓDULO GRABACIÓN / IMPRESIÓN DE TAGS */}
+          {/* MÓDULO GRABACIÓN / IMPRESIÓN DE TAGS (Con opción de Borrar) */}
           {activeTab === 'encoder' && (
             <div className="space-y-6 max-w-5xl mx-auto">
               <div>
@@ -918,6 +1018,7 @@ export default function ZonikaApp() {
                         <th className="py-3 px-4 text-center">Cantidad</th>
                         <th className="py-3 px-4">Ubicación Destino</th>
                         <th className="py-3 px-4">Momento</th>
+                        <th className="py-3 px-4 text-center">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
@@ -929,6 +1030,15 @@ export default function ZonikaApp() {
                           <td className="py-3.5 px-4 text-center font-black text-cyan-400">{item.qty}</td>
                           <td className="py-3.5 px-4 text-slate-300">{item.location}</td>
                           <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{item.time}</td>
+                          <td className="py-3.5 px-4 text-center">
+                            <button 
+                              onClick={() => handleDeleteEncodedItem(item.id)}
+                              title="Eliminar registro de codificación"
+                              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/30 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
