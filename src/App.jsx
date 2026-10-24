@@ -242,19 +242,11 @@ export default function ZonikaApp() {
             </div>
           </div>
 
-          {/* Navegación Completa */}
+          {/* Navegación Completa (Sin botón redundante de muelle) */}
           <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-230px)] pr-1">
             <div>
               <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Operación & Stock</p>
               <nav className="space-y-1">
-                <button 
-                  onClick={() => { setActiveTab('muelle'); setSelectedWarehouse('Muelle de Carga & Despachos'); }} 
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                    activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
-                  }`}
-                >
-                  <Truck className="w-4 h-4" /> Muelle de Carga & Despacho
-                </button>
                 <button 
                   onClick={() => setActiveTab('historial_muelle')} 
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
@@ -617,7 +609,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* INVENTARIO SEPARADO (MADEFRONT FERRETERÍA VS BODEGA) */}
+          {/* INVENTARIO SEPARADO */}
           {activeTab === 'inventory' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-end">
@@ -654,7 +646,6 @@ export default function ZonikaApp() {
                 </button>
               </div>
 
-              {/* Tabla según la subpestaña activa */}
               <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl overflow-hidden shadow-xl">
                 <div className="p-4 bg-slate-900/50 border-b border-slate-700 flex justify-between items-center">
                   <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
