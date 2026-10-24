@@ -350,10 +350,10 @@ export default function ZonikaApp() {
       {/* Sidebar */}
       <aside className="w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between p-4 z-10 shrink-0 select-none">
         <div>
-          {/* Logo Oficial Ocupando el Espacio Principal sin Texto */}
-          <div className="flex items-center justify-center px-2 py-4 mb-6 border-b border-slate-800/80">
-            <div className="w-full h-12 flex items-center justify-center overflow-hidden">
-              <img src={logo} alt="Zonika Logo" className="w-full h-full object-contain" />
+          {/* Logo Oficial Grande y Ajustado al Espacio */}
+          <div className="flex items-center justify-center px-2 py-3 mb-5 border-b border-slate-800/80">
+            <div className="w-full h-24 flex items-center justify-center overflow-hidden">
+              <img src={logo} alt="Zonika Logo" className="w-full h-full object-contain scale-110" />
             </div>
           </div>
 
