@@ -350,10 +350,14 @@ export default function ZonikaApp() {
       {/* Sidebar */}
       <aside className="w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between p-4 z-10 shrink-0 select-none">
         <div>
-          {/* Logo Oficial Grande y Ajustado al Espacio */}
-          <div className="flex items-center justify-center px-2 py-3 mb-5 border-b border-slate-800/80">
-            <div className="w-full h-24 flex items-center justify-center overflow-hidden">
-              <img src={logo} alt="Zonika Logo" className="w-full h-full object-contain scale-110" />
+          {/* Logo con Isotipo + Tipografía nítida en Código */}
+          <div className="flex items-center gap-3 px-2 py-4 mb-5 border-b border-slate-800/80">
+            <div className="w-12 h-12 bg-[#1E293B] border border-slate-700/80 rounded-2xl flex items-center justify-center p-1.5 shadow-inner overflow-hidden shrink-0">
+              <img src={logo} alt="Zonika Logo" className="w-full h-full object-contain scale-125" />
+            </div>
+            <div>
+              <h1 className="font-black text-lg text-white tracking-widest leading-none">ZONIKA</h1>
+              <p className="text-[10px] text-cyan-400 font-bold tracking-widest uppercase mt-1">RFID ENTERPRISE</p>
             </div>
           </div>
 
