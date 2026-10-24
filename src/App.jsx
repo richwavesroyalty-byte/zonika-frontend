@@ -5,7 +5,7 @@ import {
   Printer, BarChart3, Settings, ShieldAlert, Building2,
   FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin, Tag, Barcode
 } from 'lucide-react';
-import logo from './assets/Logo Zonika.png';
+import logoIsotipo from './assets/Logo Isotipo.png';
 
 export default function ZonikaApp() {
   const [activeTab, setActiveTab] = useState('historial_muelle');
@@ -350,13 +350,13 @@ export default function ZonikaApp() {
       {/* Sidebar */}
       <aside className="w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between p-4 z-10 shrink-0 select-none">
         <div>
-          {/* Logo con Isotipo + Tipografía nítida en Código */}
+          {/* Logo Isotipo Grande y Tipografía Nítida */}
           <div className="flex items-center gap-3 px-2 py-4 mb-5 border-b border-slate-800/80">
-            <div className="w-12 h-12 bg-[#1E293B] border border-slate-700/80 rounded-2xl flex items-center justify-center p-1.5 shadow-inner overflow-hidden shrink-0">
-              <img src={logo} alt="Zonika Logo" className="w-full h-full object-contain scale-125" />
+            <div className="w-14 h-14 bg-[#1E293B] border border-slate-700/80 rounded-2xl flex items-center justify-center p-2 shadow-inner overflow-hidden shrink-0">
+              <img src={logoIsotipo} alt="Zonika Isotipo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h1 className="font-black text-lg text-white tracking-widest leading-none">ZONIKA</h1>
+              <h1 className="font-black text-xl text-white tracking-widest leading-none">ZONIKA</h1>
               <p className="text-[10px] text-cyan-400 font-bold tracking-widest uppercase mt-1">RFID ENTERPRISE</p>
             </div>
           </div>
