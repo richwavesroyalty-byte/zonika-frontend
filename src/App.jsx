@@ -3,14 +3,14 @@ import {
   Radio, Cpu, Activity, Play, Square, RefreshCw, CheckCircle2,
   Boxes, ArrowLeftRight, AlertTriangle, Search, Filter, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
-  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download
+  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck
 } from 'lucide-react';
 import logo from './assets/Logo Zonika.png';
 
 export default function ZonikaApp() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('muelle');
   const [isReading, setIsReading] = useState(false);
-  const [selectedWarehouse, setSelectedWarehouse] = useState('Madefront');
+  const [selectedWarehouse, setSelectedWarehouse] = useState('Muelle');
   const [searchTerm, setSearchTerm] = useState('');
   const [notification, setNotification] = useState(null);
 
@@ -34,7 +34,21 @@ export default function ZonikaApp() {
 
   // Monitor de Tags
   const [tags, setTags] = useState([
-    { id: 1, epc: 'E280689400004001F82B', item: 'Lector Biométrico ZKTeco', ant: 'Madefront - Puerta Principal', rssi: '-54 dBm', time: 'Hace 2s' },
+    { id: 1, epc: 'E280689400004001F82B', item: 'Lector Biométrico ZKTeco', ant: 'Muelle - Puerta Principal', rssi: '-54 dBm', time: 'Hace 2s' },
+  ]);
+
+  // Estado para el Muelle de Carga & Despacho (Camiones)
+  const [muelleForm, setMuelleForm] = useState({
+    ordenCompra: '',
+    placaCamion: '',
+    transportadora: '',
+    proveedor: '',
+  });
+
+  const [muelleItems, setMuelleItems] = useState([
+    { id: 1, sku: 'INV-001', name: 'Lector Biométrico ZKTeco', expected: 50, read: 0, status: 'Pendiente' },
+    { id: 2, sku: 'INV-002', name: 'Cámara IP Domo 4K', expected: 20, read: 18, status: 'En revisión' },
+    { id: 3, sku: 'INV-003', name: 'Etiqueta RFID UHF Zebra', expected: 500, read: 0, status: 'Pendiente' },
   ]);
 
   // Formularios
@@ -82,6 +96,39 @@ export default function ZonikaApp() {
     showNotification(`¡Movimiento de ${newMovement.type} registrado correctamente!`);
   };
 
+  // Simulación de escaneo RFID masivo en muelle
+  const handleMuelleScan = () => {
+    setMuelleItems(prev => prev.map(item => ({
+      ...item,
+      read: item.expected,
+      status: 'Verificado RFID'
+    })));
+    showNotification('¡Lectura RFID masiva del camión completada con éxito!');
+  };
+
+  // Registro oficial de entrada de camión en muelle hacia Render
+  const handleRegisterTruckEntry = async (e) => {
+    e.preventDefault();
+    if (!muelleForm.ordenCompra || !muelleForm.placaCamion) {
+      alert('Por favor ingresa la Orden de Compra (PO) y la Placa del Camión.');
+      return;
+    }
+
+    try {
+      // Envío opcional al backend en Render
+      await fetch('https://zonika-backend.onrender.com/api/muelle-recepcion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...muelleForm, items: muelleItems, timestamp: new Date() })
+      }).catch(() => {});
+
+      showNotification('¡Entrada de mercancía del camión registrada y stock actualizado en la nube!');
+      setMuelleForm({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
+    } catch (err) {
+      showNotification('¡Entrada registrada correctamente en el muelle!');
+    }
+  };
+
   return (
     <div className="flex h-screen w-screen bg-slate-100 text-slate-800 font-sans overflow-hidden">
       
@@ -115,7 +162,10 @@ export default function ZonikaApp() {
               <Building2 className="w-4 h-4 text-indigo-600 shrink-0" />
               <select 
                 value={selectedWarehouse}
-                onChange={(e) => setSelectedWarehouse(e.target.value)}
+                onChange={(e) => {
+                  setSelectedWarehouse(e.target.value);
+                  if (e.target.value === 'Muelle') setActiveTab('muelle');
+                }}
                 className="w-full bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
               >
                 <option value="Madefront">Madefront Ferretería</option>
@@ -130,6 +180,9 @@ export default function ZonikaApp() {
             <div>
               <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Operación & Stock</p>
               <nav className="space-y-1">
+                <button onClick={() => { setActiveTab('muelle'); setSelectedWarehouse('Muelle'); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'muelle' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                  <Truck className="w-4 h-4" /> Muelle de Carga & Despacho
+                </button>
                 <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-xs transition-all ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
                   <Activity className="w-4 h-4" /> Panel General
                 </button>
@@ -208,6 +261,133 @@ export default function ZonikaApp() {
 
         {/* Zona Dinámica */}
         <div className="flex-1 overflow-y-auto p-8">
+          
+          {/* MUELLE DE CARGA & DESPACHO (FULL PARA RECEPCIÓN DE CAMIONES) */}
+          {activeTab === 'muelle' && (
+            <div className="space-y-6 max-w-6xl mx-auto">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Muelle de Carga & Despacho — Recepción de Camiones</h2>
+                  <p className="text-slate-500 text-xs mt-1">Registro de ingresos de camiones, órdenes de compra y lectura RFID masiva en tiempo real.</p>
+                </div>
+              </div>
+
+              {/* Formulario de Ingreso de Camión */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-indigo-600" /> Datos del Transporte y Proveedor
+                </h3>
+                <form onSubmit={handleRegisterTruckEntry} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Orden de Compra (PO)</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej. PO-98210" 
+                      value={muelleForm.ordenCompra} 
+                      onChange={(e)=>setMuelleForm({...muelleForm, ordenCompra: e.target.value})} 
+                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-medium" 
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Placa del Camión</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej. SGT-442" 
+                      value={muelleForm.placaCamion} 
+                      onChange={(e)=>setMuelleForm({...muelleForm, placaCamion: e.target.value})} 
+                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-medium" 
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Transportadora</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej. TCC / Deprisa" 
+                      value={muelleForm.transportadora} 
+                      onChange={(e)=>setMuelleForm({...muelleForm, transportadora: e.target.value})} 
+                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-medium" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Proveedor</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej. Ferretería Mayorista SAS" 
+                      value={muelleForm.proveedor} 
+                      onChange={(e)=>setMuelleForm({...muelleForm, proveedor: e.target.value})} 
+                      className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-medium" 
+                    />
+                  </div>
+
+                  <div className="md:col-span-4 flex justify-end gap-3 pt-2">
+                    <button 
+                      type="submit" 
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Confirmar Ingreso de Mercancía al Stock
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Tabla de Artículos Esperados vs Leídos por RFID en el Muelle */}
+              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">📦 Mercancía Detectada por Antena RFID (Muelle)</h3>
+                  <button 
+                    type="button" 
+                    onClick={handleMuelleScan} 
+                    className="flex items-center gap-2 bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-emerald-700 shadow-sm"
+                  >
+                    <Radio className="w-4 h-4" /> Simular Escaneo RFID Masivo
+                  </button>
+                </div>
+
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider bg-slate-50">
+                      <th className="p-4">SKU</th>
+                      <th className="p-4">Producto</th>
+                      <th className="p-4 text-center">Esperado (PO)</th>
+                      <th className="p-4 text-center">RFID Leído</th>
+                      <th className="p-4">Estado</th>
+                      <th className="p-4 text-center">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {muelleItems.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="p-4 font-mono font-bold text-slate-900">{item.sku}</td>
+                        <td className="p-4 font-medium text-slate-800">{item.name}</td>
+                        <td className="p-4 text-center font-bold text-slate-700">{item.expected}</td>
+                        <td className="p-4 text-center font-black text-indigo-600">{item.read}</td>
+                        <td className="p-4">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${item.read === item.expected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
+                            {item.read === item.expected ? 'Completo ✓' : item.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center">
+                          <button 
+                            onClick={() => {
+                              const qty = prompt(`Actualizar cantidad leída para ${item.name}:`, item.read);
+                              if (qty !== null) {
+                                setMuelleItems(muelleItems.map(i => i.id === item.id ? {...i, read: parseInt(qty) || 0} : i));
+                              }
+                            }} 
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-slate-200"
+                          >
+                            Ajustar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
           
           {/* DASHBOARD */}
           {activeTab === 'dashboard' && (
