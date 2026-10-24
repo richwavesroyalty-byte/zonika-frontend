@@ -3,22 +3,27 @@ import {
   Radio, Cpu, Activity, Play, Square, RefreshCw, CheckCircle2,
   Boxes, ArrowLeftRight, AlertTriangle, Search, Filter, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
-  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, ClipboardList
+  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store
 } from 'lucide-react';
 import logo from './assets/Logo Zonika.png';
 
 export default function ZonikaApp() {
   const [activeTab, setActiveTab] = useState('muelle');
   const [isReading, setIsReading] = useState(false);
-  const [selectedWarehouse, setSelectedWarehouse] = useState('Madefront Ferretería');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedWarehouse, setSelectedWarehouse] = useState('Muelle de Carga & Despachos');
+  const [inventorySubTab, setInventorySubTab] = useState('madefront'); // 'madefront' o 'bodega'
   const [notification, setNotification] = useState(null);
 
-  // Inventario interactivo
-  const [inventory, setInventory] = useState([
+  // 1. Inventario exclusivo de Madefront Ferretería
+  const [inventoryMadefront, setInventoryMadefront] = useState([
     { id: 'INV-001', epc: 'E280689400004001F82B', name: 'Lector Biométrico ZKTeco', category: 'Seguridad', stock: 45, rfidTagged: 45, location: 'Madefront Ferretería - Estante A1', status: 'Optimal' },
     { id: 'INV-002', epc: 'E280689400004001F82C', name: 'Cámara IP Domo 4K', category: 'CCTV', stock: 12, rfidTagged: 10, location: 'Madefront Ferretería - Estante B3', status: 'Low' },
-    { id: 'INV-003', epc: 'E280689400004001F82D', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', stock: 1200, rfidTagged: 1200, location: 'Madefront Ferretería - Caja 05', status: 'Optimal' },
+  ]);
+
+  // 2. Inventario exclusivo de Bodega Principal
+  const [inventoryBodega, setInventoryBodega] = useState([
+    { id: 'BOD-501', epc: 'E280689400005009A11F', name: 'Taladro Percutor Industrial 800W', category: 'Herramientas', stock: 120, rfidTagged: 1200, location: 'Bodega Principal - Pasillo 3', status: 'Optimal' },
+    { id: 'BOD-502', epc: 'E280689400005009A120', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', stock: 1200, rfidTagged: 1200, location: 'Bodega Principal - Caja 05', status: 'Optimal' },
   ]);
 
   // Movimientos
@@ -27,7 +32,7 @@ export default function ZonikaApp() {
     { id: 'MOV-502', type: 'SALIDA', item: 'Cámara IP Domo 4K', qty: 2, user: 'Operador Muelle', time: 'Hace 45 min' },
   ]);
 
-  // Historial de Recepciones de Muelle (Inicia limpio o con registros reales)
+  // Historial de Recepciones de Muelle
   const [muelleHistorial, setMuelleHistorial] = useState([]);
 
   // Auditorías y discrepancias
@@ -48,7 +53,6 @@ export default function ZonikaApp() {
     proveedor: '',
   });
 
-  // Ítems del Muelle: ¡Inician en 0 lecturas reales esperando la antena!
   const [muelleItems, setMuelleItems] = useState([
     { id: 1, sku: 'INV-001', name: 'Lector Biométrico ZKTeco', expected: 50, read: 0, status: 'Pendiente' },
     { id: 2, sku: 'INV-002', name: 'Cámara IP Domo 4K', expected: 20, read: 0, status: 'Pendiente' },
@@ -64,6 +68,21 @@ export default function ZonikaApp() {
     setTimeout(() => setNotification(null), 3500);
   };
 
+  // Manejador inteligente del selector de Sede / Almacén
+  const handleWarehouseChange = (e) => {
+    const selected = e.target.value;
+    setSelectedWarehouse(selected);
+
+    if (selected === 'Madefront Ferretería') {
+      setActiveTab('inventory');
+      setInventorySubTab('madefront');
+      showNotification('🏢 Cambiando a Sede: Madefront Ferretería');
+    } else if (selected === 'Muelle de Carga & Despachos') {
+      setActiveTab('muelle');
+      showNotification('🚚 Cambiando a Sede: Muelle de Carga & Despachos');
+    }
+  };
+
   const handleAddProduct = (e) => {
     e.preventDefault();
     if (!newProduct.id || !newProduct.name || !newProduct.stock) {
@@ -74,12 +93,19 @@ export default function ZonikaApp() {
       ...newProduct,
       epc: 'E28068940000' + Math.floor(10000000 + Math.random() * 90000000),
       rfidTagged: parseInt(newProduct.stock),
-      status: 'Optimal'
+      status: 'Optimal',
+      location: inventorySubTab === 'madefront' ? 'Madefront Ferretería' : 'Bodega Principal'
     };
-    setInventory([item, ...inventory]);
+
+    if (inventorySubTab === 'madefront') {
+      setInventoryMadefront([item, ...inventoryMadefront]);
+    } else {
+      setInventoryBodega([item, ...inventoryBodega]);
+    }
+
     setNewProduct({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
     setActiveTab('inventory');
-    showNotification('¡Producto registrado y vinculado a RFID con éxito!');
+    showNotification('¡Producto registrado y vinculado a la ubicación seleccionada!');
   };
 
   const handleAddMovement = (e) => {
@@ -101,11 +127,11 @@ export default function ZonikaApp() {
     showNotification(`¡Movimiento de ${newMovement.type} registrado correctamente!`);
   };
 
-  // Simulación de escaneo RFID real masivo en muelle
+  // Simulación de escaneo RFID masivo en muelle
   const handleMuelleScan = () => {
     setMuelleItems(prev => prev.map(item => ({
       ...item,
-      read: item.expected, // Detecta el 100% de lo esperado por la orden de compra
+      read: item.expected,
       status: 'Completo ✓'
     })));
     showNotification('📡 ¡Antenas RFID escanearon el camión con éxito en tiempo real!');
@@ -126,7 +152,6 @@ export default function ZonikaApp() {
       return;
     }
 
-    // 1. Guardar en el Historial de Muelle dedicado con datos reales
     const newRecord = {
       id: 'REC-' + Math.floor(100 + Math.random() * 900),
       ordenCompra: muelleForm.ordenCompra,
@@ -138,8 +163,8 @@ export default function ZonikaApp() {
     };
     setMuelleHistorial(prev => [newRecord, ...prev]);
 
-    // 2. Actualizar stock del inventario general con las cantidades reales leídas
-    setInventory(prevInv => prevInv.map(invItem => {
+    // Sumar stock a Madefront Ferretería por defecto al recibir en muelle
+    setInventoryMadefront(prevInv => prevInv.map(invItem => {
       const match = muelleItems.find(m => m.sku === invItem.id);
       if (match && match.read > 0) {
         return {
@@ -151,7 +176,6 @@ export default function ZonikaApp() {
       return invItem;
     }));
 
-    // 3. Registrar en Movimientos
     const newMov = {
       id: 'MOV-' + Math.floor(1000 + Math.random() * 9000),
       type: 'ENTRADA',
@@ -162,7 +186,6 @@ export default function ZonikaApp() {
     };
     setMovements(prev => [newMov, ...prev]);
 
-    // 4. Enviar al backend en Render
     try {
       await fetch('https://zonika-backend.onrender.com/api/muelle-recepcion', {
         method: 'POST',
@@ -210,15 +233,11 @@ export default function ZonikaApp() {
               <Building2 className="w-4 h-4 text-cyan-400 shrink-0" />
               <select 
                 value={selectedWarehouse}
-                onChange={(e) => {
-                  setSelectedWarehouse(e.target.value);
-                  if (e.target.value === 'Muelle de Carga & Despachos') setActiveTab('muelle');
-                }}
+                onChange={handleWarehouseChange}
                 className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
               >
                 <option value="Madefront Ferretería" className="bg-slate-900">Madefront Ferretería</option>
                 <option value="Muelle de Carga & Despachos" className="bg-slate-900">Muelle de Carga & Despachos</option>
-                <option value="Sucursal Norte" className="bg-slate-900">Sucursal Norte</option>
               </select>
             </div>
           </div>
@@ -229,7 +248,7 @@ export default function ZonikaApp() {
               <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Operación & Stock</p>
               <nav className="space-y-1">
                 <button 
-                  onClick={() => setActiveTab('muelle')} 
+                  onClick={() => { setActiveTab('muelle'); setSelectedWarehouse('Muelle de Carga & Despachos'); }} 
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
                     activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
                   }`}
@@ -253,7 +272,7 @@ export default function ZonikaApp() {
                   <Activity className="w-4 h-4" /> Panel General
                 </button>
                 <button 
-                  onClick={() => setActiveTab('inventory')} 
+                  onClick={() => { setActiveTab('inventory'); setSelectedWarehouse('Madefront Ferretería'); setInventorySubTab('madefront'); }} 
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
                     activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
                   }`}
@@ -511,7 +530,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* NUEVA PESTAÑA: HISTORIAL DE MUELLE */}
+          {/* HISTORIAL DE MUELLE */}
           {activeTab === 'historial_muelle' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
@@ -575,9 +594,14 @@ export default function ZonikaApp() {
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md">
-                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Total Productos</p>
-                  <p className="text-4xl font-black text-white mt-2">{inventory.length}</p>
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Total Productos Ferretería</p>
+                  <p className="text-4xl font-black text-white mt-2">{inventoryMadefront.length}</p>
                   <span className="text-[10px] text-emerald-400 mt-1 block font-semibold uppercase">Vinculados a RFID</span>
+                </div>
+                <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md">
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Total Productos Bodega</p>
+                  <p className="text-4xl font-black text-cyan-400 mt-2">{inventoryBodega.length}</p>
+                  <span className="text-[10px] text-slate-400 mt-1 block font-semibold uppercase">Almacén Principal</span>
                 </div>
                 <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md">
                   <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Movimientos</p>
@@ -589,43 +613,72 @@ export default function ZonikaApp() {
                   <p className="text-4xl font-black text-amber-400 mt-2">{discrepancies.length}</p>
                   <span className="text-[10px] text-amber-400 mt-1 block font-semibold uppercase">Requieren revisión</span>
                 </div>
-                <div className="bg-[#1E293B] border border-slate-700/60 p-5 rounded-2xl shadow-md">
-                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">Alertas Stock</p>
-                  <p className="text-4xl font-black text-rose-400 mt-2">1</p>
-                  <span className="text-[10px] text-rose-400 mt-1 block font-semibold uppercase">Bajo stock crítico</span>
-                </div>
               </div>
             </div>
           )}
 
-          {/* INVENTARIO */}
+          {/* INVENTARIO SEPARADO (MADEFRONT FERRETERÍA VS BODEGA) */}
           {activeTab === 'inventory' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-end">
                 <div>
                   <h2 className="text-2xl font-black text-white tracking-tight">Control de Stock e Inventarios</h2>
-                  <p className="text-slate-400 text-xs mt-1 font-medium">Gestión y registro en vivo de productos.</p>
+                  <p className="text-slate-400 text-xs mt-1 font-medium">Gestión separada por ubicación física para mayor precisión.</p>
                 </div>
                 <button onClick={() => setActiveTab('add-product')} className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg">
                   <Plus className="w-4 h-4" /> Registrar Nuevo Producto
                 </button>
               </div>
 
+              {/* Botones de alternancia: Ferretería vs Bodega */}
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setInventorySubTab('madefront')}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    inventorySubTab === 'madefront' 
+                      ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' 
+                      : 'bg-[#1E293B] text-slate-300 border border-slate-700 hover:bg-slate-800'
+                  }`}
+                >
+                  <Store className="w-4 h-4" /> Madefront Ferretería ({inventoryMadefront.length} ítems)
+                </button>
+                <button 
+                  onClick={() => setInventorySubTab('bodega')}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    inventorySubTab === 'bodega' 
+                      ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' 
+                      : 'bg-[#1E293B] text-slate-300 border border-slate-700 hover:bg-slate-800'
+                  }`}
+                >
+                  <Warehouse className="w-4 h-4" /> Bodega Principal ({inventoryBodega.length} ítems)
+                </button>
+              </div>
+
+              {/* Tabla según la subpestaña activa */}
               <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl overflow-hidden shadow-xl">
+                <div className="p-4 bg-slate-900/50 border-b border-slate-700 flex justify-between items-center">
+                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                    {inventorySubTab === 'madefront' ? '📍 Ubicación Activa: Madefront Ferretería' : '📍 Ubicación Activa: Bodega Principal'}
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">
+                    Total Registros: {inventorySubTab === 'madefront' ? inventoryMadefront.length : inventoryBodega.length}
+                  </span>
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-700 text-slate-400 text-[10px] uppercase tracking-wider bg-slate-900/40">
+                      <tr className="border-b border-slate-700 text-slate-400 text-[10px] uppercase tracking-wider bg-slate-900/30">
                         <th className="py-3 px-4">SKU</th>
                         <th className="py-3 px-4">Código RFID (EPC)</th>
                         <th className="py-3 px-4">Producto</th>
                         <th className="py-3 px-4">Categoría</th>
                         <th className="py-3 px-4 text-center">Stock</th>
-                        <th className="py-3 px-4">Ubicación</th>
+                        <th className="py-3 px-4">Ubicación Detallada</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
-                      {inventory.map((item) => (
+                      {(inventorySubTab === 'madefront' ? inventoryMadefront : inventoryBodega).map((item) => (
                         <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
                           <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{item.id}</td>
                           <td className="py-3.5 px-4 font-mono text-slate-400">{item.epc}</td>
@@ -660,12 +713,12 @@ export default function ZonikaApp() {
                   <input type="number" placeholder="Ej. 25" value={newProduct.stock} onChange={(e)=>setNewProduct({...newProduct, stock: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" required />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Ubicación</label>
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Ubicación Específica</label>
                   <input type="text" placeholder="Ej. Estante C2" value={newProduct.location} onChange={(e)=>setNewProduct({...newProduct, location: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" />
                 </div>
                 <div className="flex justify-end gap-3 pt-4">
                   <button type="button" onClick={()=>setActiveTab('inventory')} className="px-5 py-2.5 text-xs font-bold bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
-                  <button type="submit" className="px-5 py-2.5 text-xs font-bold bg-cyan-500 text-slate-950 rounded-xl shadow-lg shadow-cyan-500/20">Guardar y Vincular RFID</button>
+                  <button type="submit" className="px-5 py-2.5 text-xs font-bold bg-cyan-500 text-slate-950 rounded-xl shadow-lg shadow-cyan-500/20">Guardar en {inventorySubTab === 'madefront' ? 'Madefront' : 'Bodega'}</button>
                 </div>
               </form>
             </div>
@@ -829,7 +882,7 @@ export default function ZonikaApp() {
           )}
 
           {activeTab === 'settings' && (
-            <div className="space-y-2xl max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
+            <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
               <h2 className="text-xl font-black text-white uppercase tracking-wider">Configuración ERP y Middleware</h2>
               <p className="text-xs text-slate-400">Parámetros de conexión con antenas y servicios en Render.</p>
             </div>
