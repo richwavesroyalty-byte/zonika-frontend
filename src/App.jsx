@@ -3,12 +3,12 @@ import {
   Radio, Cpu, Activity, Play, Square, RefreshCw, CheckCircle2,
   Boxes, ArrowLeftRight, AlertTriangle, Search, Filter, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
-  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin
+  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin, Tag, Barcode
 } from 'lucide-react';
 import logo from './assets/Logo Zonika.png';
 
 export default function ZonikaApp() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('encoder');
   const [isReading, setIsReading] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState('Muelle de Carga & Despachos');
   const [inventorySubTab, setInventorySubTab] = useState('madefront'); // 'madefront' o 'bodega'
@@ -35,7 +35,7 @@ export default function ZonikaApp() {
   // Historial de Recepciones de Muelle
   const [muelleHistorial, setMuelleHistorial] = useState([]);
 
-  // Auditorías y discrepancias con Ubicación Exacta
+  // Auditorías y discrepancias
   const [discrepancies, setDiscrepancies] = useState([
     { id: 'DISC-101', sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, location: 'Madefront Ferretería - Estante B3', cause: 'Posible extravío / Sin etiqueta RFID' },
   ]);
@@ -45,14 +45,8 @@ export default function ZonikaApp() {
     { id: 1, epc: 'E280689400004001F82B', item: 'Lector Biométrico ZKTeco', ant: 'Muelle - Puerta Principal', rssi: '-54 dBm', time: 'Hace 2s' },
   ]);
 
-  // Estado para el Muelle de Carga & Despacho (Camiones)
-  const [muelleForm, setMuelleForm] = useState({
-    ordenCompra: '',
-    placaCamion: '',
-    transportadora: '',
-    proveedor: '',
-  });
-
+  // Estado para el Muelle de Carga & Despacho
+  const [muelleForm, setMuelleForm] = useState({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
   const [muelleItems, setMuelleItems] = useState([
     { id: 1, sku: 'INV-001', name: 'Lector Biométrico ZKTeco', expected: 50, read: 0, status: 'Pendiente' },
     { id: 2, sku: 'INV-002', name: 'Cámara IP Domo 4K', expected: 20, read: 0, status: 'Pendiente' },
@@ -62,6 +56,20 @@ export default function ZonikaApp() {
   // Formularios
   const [newProduct, setNewProduct] = useState({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
   const [newMovement, setNewMovement] = useState({ type: 'ENTRADA', item: '', qty: 1 });
+
+  // Estado para el Módulo de Grabación / Impresión de Tags (con historial local en la misma pestaña)
+  const [encoderForm, setEncoderForm] = useState({
+    sku: 'INV-005',
+    productName: 'Cerradura Inteligente Biométrica',
+    quantity: 10,
+    targetWarehouse: 'Madefront Ferretería',
+    locationDetail: 'Estante D4',
+    generatedEpc: 'E28068940000' + Math.floor(10000000 + Math.random() * 90000000)
+  });
+
+  const [encodedHistory, setEncodedHistory] = useState([
+    { id: 'ENC-901', sku: 'INV-001', name: 'Lector Biométrico ZKTeco', qty: 45, epc: 'E280689400004001F82B', location: 'Madefront Ferretería - Estante A1', time: 'Hace 1 hora' }
+  ]);
 
   const showNotification = (msg) => {
     setNotification(msg);
@@ -131,11 +139,7 @@ export default function ZonikaApp() {
   };
 
   const handleMuelleScan = () => {
-    setMuelleItems(prev => prev.map(item => ({
-      ...item,
-      read: item.expected,
-      status: 'Completo ✓'
-    })));
+    setMuelleItems(prev => prev.map(item => ({ ...item, read: item.expected, status: 'Completo ✓' })));
     showNotification('📡 ¡Antenas RFID escanearon el camión con éxito en tiempo real!');
   };
 
@@ -147,9 +151,8 @@ export default function ZonikaApp() {
     }
 
     const totalQtyRead = muelleItems.reduce((acc, item) => acc + Number(item.read), 0);
-
     if (totalQtyRead === 0) {
-      alert('No hay artículos leídos por RFID. Ejecute el escaneo o ajuste las cantidades antes de confirmar.');
+      alert('No hay artículos leídos por RFID.');
       return;
     }
 
@@ -167,11 +170,7 @@ export default function ZonikaApp() {
     setInventoryMadefront(prevInv => prevInv.map(invItem => {
       const match = muelleItems.find(m => m.sku === invItem.id);
       if (match && match.read > 0) {
-        return {
-          ...invItem,
-          stock: Number(invItem.stock) + Number(match.read),
-          rfidTagged: Number(invItem.rfidTagged) + Number(match.read)
-        };
+        return { ...invItem, stock: Number(invItem.stock) + Number(match.read), rfidTagged: Number(invItem.rfidTagged) + Number(match.read) };
       }
       return invItem;
     }));
@@ -185,21 +184,66 @@ export default function ZonikaApp() {
       time: 'Justo ahora'
     };
     setMovements(prev => [newMov, ...prev]);
-
     showNotification('✅ ¡Ingreso confirmado y registrado con éxito en tiempo real!');
     setMuelleForm({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
     setMuelleItems(prev => prev.map(i => ({ ...i, read: 0, status: 'Pendiente' })));
   };
 
-  // Simulador de Auditoría con Ubicación Específica
   const handleRunAuditSimulation = () => {
     const simulatedDiscrepancies = [
       { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, location: 'Madefront Ferretería - Estante B3', cause: 'Posible extravío / Sin etiqueta RFID' },
       { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'BOD-501', item: 'Taladro Percutor Industrial 800W', expected: 120, rfidCount: 118, diff: -2, location: 'Bodega Principal - Pasillo 3', cause: 'Faltante en conteo de pasillo' },
-      { id: 'DISC-' + Math.floor(100 + Math.random() * 900), sku: 'INV-001', item: 'Lector Biométrico ZKTeco', expected: 45, rfidCount: 47, diff: +2, location: 'Madefront Ferretería - Estante A1', cause: 'Sobrante detectado por antena secundaria' },
     ];
     setDiscrepancies(simulatedDiscrepancies);
     showNotification('🛰️ ¡Auditoría RFID completada con trazabilidad por ubicación!');
+  };
+
+  // Grabación e Impresión filtrada dentro de la misma pestaña (sin redirección externa)
+  const handleEncodeAndPrint = (e) => {
+    e.preventDefault();
+    if (!encoderForm.sku || !encoderForm.productName || !encoderForm.quantity) {
+      alert('Por favor complete todos los campos de codificación.');
+      return;
+    }
+
+    const newItem = {
+      id: encoderForm.sku,
+      epc: encoderForm.generatedEpc,
+      name: encoderForm.productName,
+      category: 'General',
+      stock: parseInt(encoderForm.quantity),
+      rfidTagged: parseInt(encoderForm.quantity),
+      location: `${encoderForm.targetWarehouse} - ${encoderForm.locationDetail}`,
+      status: 'Optimal'
+    };
+
+    // Añadir al inventario correspondiente
+    if (encoderForm.targetWarehouse === 'Madefront Ferretería') {
+      setInventoryMadefront(prev => [newItem, ...prev]);
+    } else {
+      setInventoryBodega(prev => [newItem, ...prev]);
+    }
+
+    // Añadir al historial local de la misma pestaña
+    const newEncodedRecord = {
+      id: 'ENC-' + Math.floor(100 + Math.random() * 900),
+      sku: encoderForm.sku,
+      name: encoderForm.productName,
+      qty: parseInt(encoderForm.quantity),
+      epc: encoderForm.generatedEpc,
+      location: `${encoderForm.targetWarehouse} - ${encoderForm.locationDetail}`,
+      time: 'Justo ahora'
+    };
+    setEncodedHistory(prev => [newEncodedRecord, ...prev]);
+
+    showNotification(`🖨️ ¡${encoderForm.quantity} Tags RFID codificados con éxito en este espacio!`);
+    
+    // Generar nuevo EPC aleatorio para el siguiente registro sin salir de la pestaña
+    setEncoderForm({
+      ...encoderForm,
+      sku: 'INV-' + Math.floor(100 + Math.random() * 900),
+      generatedEpc: 'E28068940000' + Math.floor(10000000 + Math.random() * 90000000)
+    });
   };
 
   const totalStockMadefront = inventoryMadefront.reduce((acc, item) => acc + Number(item.stock), 0);
@@ -698,7 +742,7 @@ export default function ZonikaApp() {
             </div>
           )}
 
-          {/* AUDITORÍAS & DISCREPANCIAS (Con Columna de Ubicación Exacta Visible) */}
+          {/* AUDITORÍAS & DISCREPANCIAS */}
           {activeTab === 'audits' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div className="flex justify-between items-center">
@@ -706,10 +750,7 @@ export default function ZonikaApp() {
                   <h2 className="text-2xl font-black text-white tracking-tight">Auditorías & Discrepancias RFID</h2>
                   <p className="text-slate-400 text-xs mt-1 font-medium">Comparativa automática entre el stock teórico del ERP y el conteo físico con ubicación exacta.</p>
                 </div>
-                <button 
-                  onClick={handleRunAuditSimulation}
-                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
-                >
+                <button onClick={handleRunAuditSimulation} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all">
                   <Zap className="w-4 h-4" /> 🛰️ Ejecutar Conteo / Auditoría RFID
                 </button>
               </div>
@@ -763,6 +804,154 @@ export default function ZonikaApp() {
             </div>
           )}
 
+          {/* MÓDULO GRABACIÓN / IMPRESIÓN DE TAGS (Filtrado y Operativo en el mismo espacio) */}
+          {activeTab === 'encoder' && (
+            <div className="space-y-6 max-w-5xl mx-auto">
+              <div>
+                <h2 className="text-2xl font-black text-white tracking-tight">Grabación e Impresión de Tags RFID</h2>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Estación de codificación de chips EPC y generación de etiquetas UHF para nuevos artículos.</p>
+              </div>
+
+              {/* Formulario de Codificación */}
+              <div className="bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl space-y-6">
+                <div className="flex items-center gap-3 border-b border-slate-700/80 pb-4">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                    <Printer className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Generador & Codificador EPC Class 1 Gen 2</h3>
+                    <p className="text-xs text-slate-400">Los datos ingresados se grabarán en la etiqueta física y alimentarán el stock del almacén seleccionado.</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleEncodeAndPrint} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">SKU / Código del Producto</label>
+                      <input 
+                        type="text" 
+                        value={encoderForm.sku} 
+                        onChange={(e)=>setEncoderForm({...encoderForm, sku: e.target.value})} 
+                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono font-bold" 
+                        required 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Nombre del Producto</label>
+                      <input 
+                        type="text" 
+                        value={encoderForm.productName} 
+                        onChange={(e)=>setEncoderForm({...encoderForm, productName: e.target.value})} 
+                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-semibold" 
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Cantidad de Tags a Imprimir</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={encoderForm.quantity} 
+                        onChange={(e)=>setEncoderForm({...encoderForm, quantity: e.target.value})} 
+                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-bold" 
+                        required 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Almacén Destino</label>
+                      <select 
+                        value={encoderForm.targetWarehouse} 
+                        onChange={(e)=>setEncoderForm({...encoderForm, targetWarehouse: e.target.value})} 
+                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-bold cursor-pointer"
+                      >
+                        <option value="Madefront Ferretería">Madefront Ferretería</option>
+                        <option value="Bodega Principal">Bodega Principal</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Ubicación / Estante</label>
+                      <input 
+                        type="text" 
+                        value={encoderForm.locationDetail} 
+                        onChange={(e)=>setEncoderForm({...encoderForm, locationDetail: e.target.value})} 
+                        className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400" 
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 block mb-1 uppercase">Código EPC Hexadecimal Autogenerado (Chip UHF)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={encoderForm.generatedEpc} 
+                        readOnly 
+                        className="w-full bg-[#0F172A]/80 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-cyan-400 font-mono font-bold select-all" 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={()=>setEncoderForm({...encoderForm, generatedEpc: 'E28068940000' + Math.floor(10000000 + Math.random() * 90000000)})} 
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 rounded-xl border border-slate-700 shrink-0 transition-colors"
+                      >
+                        Regenerar EPC
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex justify-end">
+                    <button 
+                      type="submit" 
+                      className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs px-6 py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 uppercase tracking-wider"
+                    >
+                      <Printer className="w-4 h-4" /> Grabar Chip EPC e Imprimir Etiqueta
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Historial Local Filtrado en la misma pestaña */}
+              <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-cyan-400" /> Historial de Tags Codificados en esta Sesión
+                  </h3>
+                  <span className="text-xs text-slate-400 font-mono">Total Registros: {encodedHistory.length}</span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider">
+                        <th className="py-3 px-4">ID Lote</th>
+                        <th className="py-3 px-4">SKU / Producto</th>
+                        <th className="py-3 px-4">Código EPC</th>
+                        <th className="py-3 px-4 text-center">Cantidad</th>
+                        <th className="py-3 px-4">Ubicación Destino</th>
+                        <th className="py-3 px-4">Momento</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
+                      {encodedHistory.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{item.id}</td>
+                          <td className="py-3.5 px-4 font-semibold text-white">{item.sku} - {item.name}</td>
+                          <td className="py-3.5 px-4 font-mono text-slate-400 text-[11px]">{item.epc}</td>
+                          <td className="py-3.5 px-4 text-center font-black text-cyan-400">{item.qty}</td>
+                          <td className="py-3.5 px-4 text-slate-300">{item.location}</td>
+                          <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{item.time}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'monitor' && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <h2 className="text-2xl font-black text-white tracking-tight">Monitor de Lectura de EPCs</h2>
@@ -804,13 +993,6 @@ export default function ZonikaApp() {
                   <p className="text-xs text-slate-400 font-mono">IP: 192.168.1.182 | Modo: Handheld RFID</p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {activeTab === 'encoder' && (
-            <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
-              <h2 className="text-xl font-black text-white uppercase tracking-wider">Grabación e Impresión de Tags RFID</h2>
-              <p className="text-xs text-slate-400">Generación y escritura masiva de códigos EPC en etiquetas UHF.</p>
             </div>
           )}
 
