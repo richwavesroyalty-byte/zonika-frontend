@@ -3,7 +3,7 @@ import {
   Radio, Cpu, Activity, Play, Square, RefreshCw, CheckCircle2,
   Boxes, ArrowLeftRight, AlertTriangle, Search, Filter, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
-  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap
+  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, ClipboardList
 } from 'lucide-react';
 import logo from './assets/Logo Zonika.png';
 
@@ -27,6 +27,19 @@ export default function ZonikaApp() {
     { id: 'MOV-502', type: 'SALIDA', item: 'Cámara IP Domo 4K', qty: 2, user: 'Operador Muelle', time: 'Hace 45 min' },
   ]);
 
+  // Historial de Recepciones de Muelle (NUEVO ESPACIO DEDICADO)
+  const [muelleHistorial, setMuelleHistorial] = useState([
+    {
+      id: 'REC-001',
+      ordenCompra: 'PO-98210',
+      placaCamion: 'SGT-442',
+      transportadora: 'TCC / Deprisa',
+      proveedor: 'Ferretería Mayorista SAS',
+      timestamp: '23/10/2026 08:15 PM',
+      totalItems: 68
+    }
+  ]);
+
   // Auditorías y discrepancias
   const [discrepancies, setDiscrepancies] = useState([
     { id: 'DISC-101', sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, cause: 'Posible extravío / Sin etiqueta RFID' },
@@ -39,10 +52,10 @@ export default function ZonikaApp() {
 
   // Estado para el Muelle de Carga & Despacho (Camiones)
   const [muelleForm, setMuelleForm] = useState({
-    ordenCompra: 'PO-98210',
-    placaCamion: 'SGT-442',
-    transportadora: 'TCC / Deprisa',
-    proveedor: 'Ferretería Mayorista SAS',
+    ordenCompra: '',
+    placaCamion: '',
+    transportadora: '',
+    proveedor: '',
   });
 
   const [muelleItems, setMuelleItems] = useState([
@@ -107,7 +120,7 @@ export default function ZonikaApp() {
     showNotification('📡 ¡Lectura RFID masiva completada por las antenas del muelle!');
   };
 
-  // 🚀 REGISTRO OFICIAL EN TIEMPO REAL: Actualiza Stock, Movimientos y Backend
+  // Registro oficial y almacenamiento en Historial de Muelle
   const handleRegisterTruckEntry = async (e) => {
     e.preventDefault();
     if (!muelleForm.ordenCompra || !muelleForm.placaCamion) {
@@ -115,7 +128,21 @@ export default function ZonikaApp() {
       return;
     }
 
-    // 1. Actualizar stock del inventario general sumando lo leído
+    const totalQtyRead = muelleItems.reduce((acc, item) => acc + Number(item.read), 0);
+
+    // 1. Guardar en el Historial de Muelle dedicado
+    const newRecord = {
+      id: 'REC-' + Math.floor(100 + Math.random() * 900),
+      ordenCompra: muelleForm.ordenCompra,
+      placaCamion: muelleForm.placaCamion,
+      transportadora: muelleForm.transportadora || 'N/A',
+      proveedor: muelleForm.proveedor || 'N/A',
+      timestamp: new Date().toLocaleString(),
+      totalItems: totalQtyRead
+    };
+    setMuelleHistorial(prev => [newRecord, ...prev]);
+
+    // 2. Actualizar stock del inventario general
     setInventory(prevInv => prevInv.map(invItem => {
       const match = muelleItems.find(m => m.sku === invItem.id);
       if (match && match.read > 0) {
@@ -128,8 +155,7 @@ export default function ZonikaApp() {
       return invItem;
     }));
 
-    // 2. Registrar el movimiento automáticamente en la sección de Entradas y Salidas
-    const totalQtyRead = muelleItems.reduce((acc, item) => acc + Number(item.read), 0);
+    // 3. Registrar en Movimientos
     const newMov = {
       id: 'MOV-' + Math.floor(1000 + Math.random() * 9000),
       type: 'ENTRADA',
@@ -140,19 +166,16 @@ export default function ZonikaApp() {
     };
     setMovements(prev => [newMov, ...prev]);
 
-    // 3. Enviar al backend en Render
+    // 4. Enviar al backend en Render
     try {
       await fetch('https://zonika-backend.onrender.com/api/muelle-recepcion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...muelleForm, items: muelleItems, timestamp: new Date() })
       });
-      showNotification('✅ ¡Ingreso confirmado! Stock y movimientos actualizados en tiempo real.');
-    } catch (err) {
-      showNotification('✅ ¡Ingreso registrado y stock actualizado con éxito en tiempo real!');
-    }
+    } catch (err) {}
 
-    // Limpiar formulario y reiniciar lecturas leídas del muelle
+    showNotification('✅ ¡Ingreso confirmado y registrado en el Historial de Muelle!');
     setMuelleForm({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
     setMuelleItems(prev => prev.map(i => ({ ...i, read: 0, status: 'Pendiente' })));
   };
@@ -216,6 +239,14 @@ export default function ZonikaApp() {
                   }`}
                 >
                   <Truck className="w-4 h-4" /> Muelle de Carga & Despacho
+                </button>
+                <button 
+                  onClick={() => setActiveTab('historial_muelle')} 
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition-all ${
+                    activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/20' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                  }`}
+                >
+                  <ClipboardList className="w-4 h-4" /> Historial de Muelle
                 </button>
                 <button 
                   onClick={() => setActiveTab('dashboard')} 
@@ -475,6 +506,54 @@ export default function ZonikaApp() {
                               Ajustar
                             </button>
                           </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* NUEVA PESTAÑA: HISTORIAL DE MUELLE */}
+          {activeTab === 'historial_muelle' && (
+            <div className="space-y-6 max-w-6xl mx-auto">
+              <div>
+                <h2 className="text-2xl font-black text-white tracking-tight">Historial de Recepciones en Muelle</h2>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Registro detallado de todos los camiones procesados e ingresados al inventario.</p>
+              </div>
+
+              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-cyan-400" /> Registro Histórico de Entradas
+                  </h3>
+                  <span className="text-xs text-slate-400 font-mono">Total Registros: {muelleHistorial.length}</span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider">
+                        <th className="py-3 px-4">ID Recepción</th>
+                        <th className="py-3 px-4">Orden Compra (PO)</th>
+                        <th className="py-3 px-4">Placa Camión</th>
+                        <th className="py-3 px-4">Transportadora</th>
+                        <th className="py-3 px-4">Proveedor</th>
+                        <th className="py-3 px-4 text-center">Total Ítems Leídos</th>
+                        <th className="py-3 px-4">Fecha y Hora</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
+                      {muelleHistorial.map((rec) => (
+                        <tr key={rec.id} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{rec.id}</td>
+                          <td className="py-3.5 px-4 font-mono font-semibold text-white">{rec.ordenCompra}</td>
+                          <td className="py-3.5 px-4 font-bold text-emerald-400">{rec.placaCamion}</td>
+                          <td className="py-3.5 px-4 text-slate-300">{rec.transportadora}</td>
+                          <td className="py-3.5 px-4 text-slate-300">{rec.proveedor}</td>
+                          <td className="py-3.5 px-4 text-center font-black text-cyan-400 text-sm">{rec.totalItems}</td>
+                          <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{rec.timestamp}</td>
                         </tr>
                       ))}
                     </tbody>
