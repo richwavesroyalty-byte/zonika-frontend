@@ -3,18 +3,30 @@ import {
   Radio, Cpu, Activity, Play, Square, RefreshCw, CheckCircle2,
   Boxes, ArrowLeftRight, AlertTriangle, Search, Filter, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
-  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin, Tag, Barcode
+  FileSpreadsheet, ArrowUpRight, ArrowDownLeft, Trash2, Check, Download, 
+  Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin, Tag, Barcode,
+  Lock, Mail, LogOut, UserCheck, Shield
 } from 'lucide-react';
 import logoIsotipo from './assets/Logo Isotipo.png';
 
 export default function ZonikaApp() {
+  // --- AUTENTICACIÓN & SESIÓN ---
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('zonika_current_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+
+  // --- NAVEGACIÓN Y ESTADOS ERP ---
   const [activeTab, setActiveTab] = useState('historial_muelle');
   const [isReading, setIsReading] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState('Muelle de Carga & Despachos');
-  const [inventorySubTab, setInventorySubTab] = useState('madefront'); // 'madefront' o 'bodega'
+  const [inventorySubTab, setInventorySubTab] = useState('madefront');
   const [notification, setNotification] = useState(null);
 
-  // 1. Inventario exclusivo de Madefront Ferretería (con localStorage)
+  // --- BASE DE DATOS LOCAL (LOCALSTORAGE) ---
   const [inventoryMadefront, setInventoryMadefront] = useState(() => {
     const saved = localStorage.getItem('zonika_inv_madefront');
     return saved ? JSON.parse(saved) : [
@@ -23,7 +35,6 @@ export default function ZonikaApp() {
     ];
   });
 
-  // 2. Inventario exclusivo de Bodega Principal (con localStorage)
   const [inventoryBodega, setInventoryBodega] = useState(() => {
     const saved = localStorage.getItem('zonika_inv_bodega');
     return saved ? JSON.parse(saved) : [
@@ -32,35 +43,30 @@ export default function ZonikaApp() {
     ];
   });
 
-  // Movimientos (con localStorage)
   const [movements, setMovements] = useState(() => {
     const saved = localStorage.getItem('zonika_movements');
     return saved ? JSON.parse(saved) : [
-      { id: 'MOV-501', type: 'ENTRADA', item: 'Lector Biométrico ZKTeco', qty: 15, user: 'Operador', time: 'Hace 10 min' },
-      { id: 'MOV-502', type: 'SALIDA', item: 'Cámara IP Domo 4K', qty: 2, user: 'Operador Muelle', time: 'Hace 45 min' },
+      { id: 'MOV-501', type: 'ENTRADA', item: 'Lector Biométrico ZKTeco', qty: 15, user: 'Carlos Mendoza (Admin)', time: 'Hace 10 min' },
+      { id: 'MOV-502', type: 'SALIDA', item: 'Cámara IP Domo 4K', qty: 2, user: 'Juan Pérez (Muelle)', time: 'Hace 45 min' },
     ];
   });
 
-  // Historial de Recepciones de Muelle (con localStorage)
   const [muelleHistorial, setMuelleHistorial] = useState(() => {
     const saved = localStorage.getItem('zonika_muelle_historial');
     return saved ? JSON.parse(saved) : [
-      { id: 'REC-892', ordenCompra: 'PO-44102', placaCamion: 'SGT-881', transportadora: 'TCC Carga', proveedor: 'Ferretería Mayorista SAS', timestamp: '23/10/2026, 09:15:22 a.m.', totalItems: 250 },
-      { id: 'REC-304', ordenCompra: 'PO-98210', placaCamion: 'WXYZ-12', transportadora: 'Deprisa Logística', proveedor: 'Seguridad Global Andina', timestamp: '23/10/2026, 02:40:10 p.m.', totalItems: 50 },
+      { id: 'REC-892', ordenCompra: 'PO-44102', placaCamion: 'SGT-881', transportadora: 'TCC Carga', proveedor: 'Ferretería Mayorista SAS', timestamp: '23/10/2026, 09:15:22 a.m.', totalItems: 250, operator: 'Juan Pérez' },
+      { id: 'REC-304', ordenCompra: 'PO-98210', placaCamion: 'WXYZ-12', transportadora: 'Deprisa Logística', proveedor: 'Seguridad Global Andina', timestamp: '23/10/2026, 02:40:10 p.m.', totalItems: 50, operator: 'Carlos Mendoza' },
     ];
   });
 
-  // Auditorías y discrepancias
   const [discrepancies, setDiscrepancies] = useState([
     { id: 'DISC-101', sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, location: 'Madefront Ferretería - Estante B3', cause: 'Posible extravío / Sin etiqueta RFID' },
   ]);
 
-  // Monitor de Tags
   const [tags, setTags] = useState([
     { id: 1, epc: 'E280689400004001F82B', item: 'Lector Biométrico ZKTeco', ant: 'Muelle - Puerta Principal', rssi: '-54 dBm', time: 'Hace 2s' },
   ]);
 
-  // Estado para el Muelle de Carga & Despacho
   const [muelleForm, setMuelleForm] = useState({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
   const [muelleItems, setMuelleItems] = useState([
     { id: 1, sku: 'INV-001', name: 'Lector Biométrico ZKTeco', expected: 50, read: 0, status: 'Pendiente' },
@@ -68,11 +74,9 @@ export default function ZonikaApp() {
     { id: 3, sku: 'INV-003', name: 'Etiqueta RFID UHF Zebra', expected: 500, read: 0, status: 'Pendiente' },
   ]);
 
-  // Formularios
   const [newProduct, setNewProduct] = useState({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
   const [newMovement, setNewMovement] = useState({ type: 'ENTRADA', item: '', qty: 1 });
 
-  // Estado para el Módulo de Grabación / Impresión de Tags (con localStorage)
   const [encoderForm, setEncoderForm] = useState({
     sku: 'INV-005',
     productName: 'Cerradura Inteligente Biométrica',
@@ -85,11 +89,15 @@ export default function ZonikaApp() {
   const [encodedHistory, setEncodedHistory] = useState(() => {
     const saved = localStorage.getItem('zonika_encoded_history');
     return saved ? JSON.parse(saved) : [
-      { id: 'ENC-901', sku: 'INV-001', name: 'Lector Biométrico ZKTeco', qty: 45, epc: 'E280689400004001F82B', location: 'Madefront Ferretería - Estante A1', time: 'Hace 1 hora' }
+      { id: 'ENC-901', sku: 'INV-001', name: 'Lector Biométrico ZKTeco', qty: 45, epc: 'E280689400004001F82B', location: 'Madefront Ferretería - Estante A1', time: 'Hace 1 hora', operator: 'Carlos Mendoza' }
     ];
   });
 
-  // Sincronizar con localStorage automáticamente al cambiar los estados
+  // EFFETS LOCALSTORAGE
+  useEffect(() => {
+    localStorage.setItem('zonika_current_user', JSON.stringify(currentUser));
+  }, [currentUser]);
+
   useEffect(() => {
     localStorage.setItem('zonika_inv_madefront', JSON.stringify(inventoryMadefront));
   }, [inventoryMadefront]);
@@ -115,7 +123,34 @@ export default function ZonikaApp() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Funciones de Eliminación (Delete)
+  // --- LÓGICA DE LOGIN ---
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setLoginError('');
+
+    const usersList = [
+      { email: 'admin@zonika.com', pass: 'admin123', name: 'Carlos Mendoza', role: 'Administrador', badge: 'ADMIN' },
+      { email: 'muelle@zonika.com', pass: 'muelle123', name: 'Juan Pérez', role: 'Operador de Muelle', badge: 'OPERADOR' },
+      { email: 'bodega@zonika.com', pass: 'bodega123', name: 'Sonia Gómez', role: 'Encargada de Inventario', badge: 'LOGÍSTICA' },
+    ];
+
+    const match = usersList.find(u => u.email.toLowerCase() === loginForm.email.toLowerCase() && u.pass === loginForm.password);
+
+    if (match) {
+      setCurrentUser(match);
+      showNotification(`👋 ¡Bienvenido de nuevo, ${match.name}!`);
+    } else {
+      setLoginError('Credenciales incorrectas. Revisa el correo y la contraseña.');
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('zonika_current_user');
+    showNotification('🔒 Sesión cerrada correctamente.');
+  };
+
+  // FUNCIONES DE ELIMINACIÓN
   const handleDeleteMuelleRecord = (id) => {
     if (window.confirm(`¿Estás seguro de eliminar el registro de recepción ${id}?`)) {
       setMuelleHistorial(prev => prev.filter(item => item.id !== id));
@@ -202,7 +237,7 @@ export default function ZonikaApp() {
       type: newMovement.type,
       item: newMovement.item,
       qty: parseInt(newMovement.qty),
-      user: 'Operador Activo',
+      user: currentUser ? currentUser.name : 'Operador Activo',
       time: 'Justo ahora'
     };
     setMovements([mov, ...movements]);
@@ -235,7 +270,8 @@ export default function ZonikaApp() {
       transportadora: muelleForm.transportadora || 'N/A',
       proveedor: muelleForm.proveedor || 'N/A',
       timestamp: new Date().toLocaleString(),
-      totalItems: totalQtyRead
+      totalItems: totalQtyRead,
+      operator: currentUser ? currentUser.name : 'Operador Muelle'
     };
     setMuelleHistorial(prev => [newRecord, ...prev]);
 
@@ -252,7 +288,7 @@ export default function ZonikaApp() {
       type: 'ENTRADA',
       item: `Recepción Camión PO: ${muelleForm.ordenCompra} (${muelleForm.placaCamion})`,
       qty: totalQtyRead,
-      user: 'Operador Muelle',
+      user: currentUser ? currentUser.name : 'Operador Muelle',
       time: 'Justo ahora'
     };
     setMovements(prev => [newMov, ...prev]);
@@ -274,7 +310,8 @@ export default function ZonikaApp() {
       transportadora: randomTransp[Math.floor(Math.random() * randomTransp.length)],
       proveedor: randomProv[Math.floor(Math.random() * randomProv.length)],
       timestamp: new Date().toLocaleString(),
-      totalItems: Math.floor(80 + Math.random() * 400)
+      totalItems: Math.floor(80 + Math.random() * 400),
+      operator: currentUser ? currentUser.name : 'Operador'
     };
 
     setMuelleHistorial(prev => [simulatedTruck, ...prev]);
@@ -321,7 +358,8 @@ export default function ZonikaApp() {
       qty: parseInt(encoderForm.quantity),
       epc: encoderForm.generatedEpc,
       location: `${encoderForm.targetWarehouse} - ${encoderForm.locationDetail}`,
-      time: 'Justo ahora'
+      time: 'Justo ahora',
+      operator: currentUser ? currentUser.name : 'Operador'
     };
     setEncodedHistory(prev => [newEncodedRecord, ...prev]);
 
@@ -337,6 +375,118 @@ export default function ZonikaApp() {
   const totalStockMadefront = inventoryMadefront.reduce((acc, item) => acc + Number(item.stock), 0);
   const totalStockBodega = inventoryBodega.reduce((acc, item) => acc + Number(item.stock), 0);
 
+  // =========================================================================
+  // 1. PANTALLA DE LOGIN (SI NO HAY USUARIO AUTENTICADO)
+  // =========================================================================
+  if (!currentUser) {
+    return (
+      <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans items-center justify-center p-4">
+        
+        {notification && (
+          <div className="fixed top-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-cyan-300 animate-bounce">
+            <CheckCircle2 className="w-5 h-5" />
+            <span>{notification}</span>
+          </div>
+        )}
+
+        <div className="w-full max-w-md bg-[#0F172A] border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-8 relative overflow-hidden">
+          
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-emerald-400 to-cyan-500"></div>
+
+          {/* Encabezado Logo */}
+          <div className="text-center space-y-3">
+            <div className="w-20 h-20 bg-[#1E293B] border border-slate-700/80 rounded-2xl flex items-center justify-center p-3 shadow-inner mx-auto">
+              <img src={logoIsotipo} alt="Zonika Isotipo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="font-black text-2xl text-white tracking-widest leading-none">ZONIKA</h1>
+              <p className="text-xs text-cyan-400 font-bold tracking-widest uppercase mt-1">RFID ENTERPRISE</p>
+            </div>
+            <p className="text-xs text-slate-400">Plataforma Cloud de Gestión & Control Logístico</p>
+          </div>
+
+          {/* Formulario */}
+          <form onSubmit={handleLogin} className="space-y-5">
+            {loginError && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-xs font-semibold text-center">
+                {loginError}
+              </div>
+            )}
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Correo Electrónico</label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                <input 
+                  type="email" 
+                  placeholder="admin@zonika.com" 
+                  value={loginForm.email} 
+                  onChange={(e)=>setLoginForm({...loginForm, email: e.target.value})} 
+                  className="w-full bg-[#1E293B] border border-slate-700/80 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-semibold" 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Contraseña de Acceso</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                <input 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={loginForm.password} 
+                  onChange={(e)=>setLoginForm({...loginForm, password: e.target.value})} 
+                  className="w-full bg-[#1E293B] border border-slate-700/80 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-semibold" 
+                  required 
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs py-3 rounded-xl shadow-lg shadow-cyan-500/20 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+            >
+              <Shield className="w-4 h-4" /> Iniciar Sesión en Zonika
+            </button>
+          </form>
+
+          {/* Accesos Rápidos de Prueba */}
+          <div className="border-t border-slate-800/80 pt-5 space-y-2">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Cuentas de Prueba Rápida:</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button 
+                type="button" 
+                onClick={() => setLoginForm({ email: 'admin@zonika.com', password: 'admin123' })} 
+                className="bg-slate-800/60 hover:bg-slate-800 text-slate-300 border border-slate-700 p-2 rounded-xl text-[10px] font-bold text-center"
+              >
+                Admin
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setLoginForm({ email: 'muelle@zonika.com', password: 'muelle123' })} 
+                className="bg-slate-800/60 hover:bg-slate-800 text-slate-300 border border-slate-700 p-2 rounded-xl text-[10px] font-bold text-center"
+              >
+                Muelle
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setLoginForm({ email: 'bodega@zonika.com', password: 'bodega123' })} 
+                className="bg-slate-800/60 hover:bg-slate-800 text-slate-300 border border-slate-700 p-2 rounded-xl text-[10px] font-bold text-center"
+              >
+                Bodega
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 2. SISTEMA COMPLETO ZONIKA (USUARIO AUTENTICADO)
+  // =========================================================================
   return (
     <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans overflow-hidden">
       
@@ -379,7 +529,7 @@ export default function ZonikaApp() {
             </div>
           </div>
 
-          <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-230px)] pr-1">
+          <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-290px)] pr-1">
             <div>
               <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Operación & Stock</p>
               <nav className="space-y-1">
@@ -430,9 +580,22 @@ export default function ZonikaApp() {
           </div>
         </div>
 
-        <div className="border-t border-slate-800/80 pt-3 px-2">
-          <p className="text-[11px] font-bold text-slate-300">Zonika Intelligent Inventory</p>
-          <p className="text-[10px] text-slate-500">Zonika Suite v1.0</p>
+        {/* Tarjeta de Usuario y Salida */}
+        <div className="border-t border-slate-800/80 pt-3 px-2 space-y-2">
+          <div className="flex items-center justify-between bg-[#1E293B] border border-slate-700/80 p-2.5 rounded-xl">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-black text-xs shrink-0">
+                {currentUser.name.charAt(0)}
+              </div>
+              <div className="truncate">
+                <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+                <p className="text-[9px] text-cyan-400 font-bold uppercase">{currentUser.role}</p>
+              </div>
+            </div>
+            <button onClick={handleLogout} title="Cerrar Sesión" className="text-slate-400 hover:text-red-400 p-1 rounded-lg transition-colors shrink-0">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -516,7 +679,7 @@ export default function ZonikaApp() {
                       <div key={m.id} className="flex justify-between items-center bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs">
                         <div>
                           <span className="text-white font-semibold block">{m.item}</span>
-                          <span className="text-[10px] text-slate-400">{m.user} • {m.time}</span>
+                          <span className="text-[10px] text-slate-400">Por: {m.user} • {m.time}</span>
                         </div>
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${m.type === 'ENTRADA' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
                           {m.type} ({m.qty})
@@ -675,6 +838,7 @@ export default function ZonikaApp() {
                           <th className="py-3 px-4">Transportadora</th>
                           <th className="py-3 px-4">Proveedor</th>
                           <th className="py-3 px-4 text-center">Total Ítems Leídos</th>
+                          <th className="py-3 px-4">Operador</th>
                           <th className="py-3 px-4">Fecha y Hora</th>
                           <th className="py-3 px-4 text-center">Acciones</th>
                         </tr>
@@ -688,6 +852,7 @@ export default function ZonikaApp() {
                             <td className="py-3.5 px-4 text-slate-300">{rec.transportadora}</td>
                             <td className="py-3.5 px-4 text-slate-300">{rec.proveedor}</td>
                             <td className="py-3.5 px-4 text-center font-black text-cyan-400 text-sm">{rec.totalItems}</td>
+                            <td className="py-3.5 px-4 text-slate-300 font-semibold">{rec.operator || 'Operador'}</td>
                             <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{rec.timestamp}</td>
                             <td className="py-3.5 px-4 text-center">
                               <button 
@@ -854,7 +1019,7 @@ export default function ZonikaApp() {
                           </td>
                           <td className="py-3.5 px-4 font-semibold text-white">{m.item}</td>
                           <td className="py-3.5 px-4 text-center font-bold text-white">{m.qty}</td>
-                          <td className="py-3.5 px-4 text-slate-400">{m.user}</td>
+                          <td className="py-3.5 px-4 text-slate-300 font-semibold">{m.user}</td>
                           <td className="py-3.5 px-4 text-slate-500">{m.time}</td>
                           <td className="py-3.5 px-4 text-center">
                             <button 
@@ -1018,6 +1183,7 @@ export default function ZonikaApp() {
                         <th className="py-3 px-4">Código EPC</th>
                         <th className="py-3 px-4 text-center">Cantidad</th>
                         <th className="py-3 px-4">Ubicación Destino</th>
+                        <th className="py-3 px-4">Operador</th>
                         <th className="py-3 px-4">Momento</th>
                         <th className="py-3 px-4 text-center">Acciones</th>
                       </tr>
@@ -1030,6 +1196,7 @@ export default function ZonikaApp() {
                           <td className="py-3.5 px-4 font-mono text-slate-400 text-[11px]">{item.epc}</td>
                           <td className="py-3.5 px-4 text-center font-black text-cyan-400">{item.qty}</td>
                           <td className="py-3.5 px-4 text-slate-300">{item.location}</td>
+                          <td className="py-3.5 px-4 text-slate-300 font-semibold">{item.operator || 'Operador'}</td>
                           <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{item.time}</td>
                           <td className="py-3.5 px-4 text-center">
                             <button 
