@@ -4,7 +4,7 @@ import {
   Boxes, ArrowLeftRight, AlertTriangle, Plus,
   Printer, BarChart3, Settings, ShieldAlert, Building2,
   Trash2, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin,
-  Lock, Mail, LogOut, Shield
+  Lock, Mail, LogOut, Shield, TrendingUp, TrendingDown, Sparkles
 } from 'lucide-react';
 import logoIsotipo from './assets/Logo Isotipo.png';
 
@@ -23,7 +23,6 @@ export default function ZonikaApp() {
   const [inventorySubTab, setInventorySubTab] = useState('madefront');
   const [notification, setNotification] = useState(null);
 
-  // Redirección inteligente al iniciar sesión según rol
   useEffect(() => {
     if (currentUser) {
       if (currentUser.roleKey === 'muelle') {
@@ -77,6 +76,14 @@ export default function ZonikaApp() {
 
   const [tags, setTags] = useState([
     { id: 1, epc: 'E280689400004001F82B', item: 'Lector Biométrico ZKTeco', ant: 'Muelle - Puerta Principal', rssi: '-54 dBm', time: 'Hace 2s' },
+  ]);
+
+  // Datos simulados de rendimiento de ventas para la IA y métricas del Admin
+  const [productSalesPerformance] = useState([
+    { id: 'INV-001', name: 'Lector Biométrico ZKTeco', category: 'Seguridad', velocity: 'Alta', percentage: 88, trend: 'up', statusColor: 'bg-emerald-500' },
+    { id: 'BOD-501', name: 'Taladro Percutor Industrial 800W', category: 'Herramientas', velocity: 'Alta', percentage: 76, trend: 'up', statusColor: 'bg-emerald-500' },
+    { id: 'INV-002', name: 'Cámara IP Domo 4K', category: 'CCTV', velocity: 'Media', percentage: 45, trend: 'stable', statusColor: 'bg-cyan-500' },
+    { id: 'BOD-502', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', velocity: 'Baja (Estancado)', percentage: 15, trend: 'down', statusColor: 'bg-amber-500' },
   ]);
 
   const [muelleForm, setMuelleForm] = useState({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
@@ -134,10 +141,9 @@ export default function ZonikaApp() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // --- CONTROL DE ACCESO (ADMIN ACCESO TOTAL) ---
   const hasAccess = (moduleKey) => {
     if (!currentUser) return false;
-    if (currentUser.roleKey === 'admin') return true; // El Administrador tiene 100% de acceso total
+    if (currentUser.roleKey === 'admin') return true;
 
     const rolePermissions = {
       muelle: ['muelle', 'historial_muelle', 'monitor'],
@@ -364,7 +370,6 @@ export default function ZonikaApp() {
   const totalStockMadefront = inventoryMadefront.reduce((acc, item) => acc + Number(item.stock), 0);
   const totalStockBodega = inventoryBodega.reduce((acc, item) => acc + Number(item.stock), 0);
 
-  // 1. PANTALLA LOGIN
   if (!currentUser) {
     return (
       <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans items-center justify-center p-4">
@@ -424,7 +429,6 @@ export default function ZonikaApp() {
     );
   }
 
-  // 2. APLICACIÓN PRINCIPAL CON ACCESO TOTAL PARA EL ADMIN
   return (
     <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans overflow-hidden">
       {notification && (
@@ -574,12 +578,12 @@ export default function ZonikaApp() {
 
         <div className="flex-1 overflow-y-auto p-8">
           
-          {/* DASHBOARD */}
+          {/* DASHBOARD CON TABLA DE ROTACIÓN Y ALERTAS DE IA */}
           {activeTab === 'dashboard' && hasAccess('dashboard') && (
             <div className="space-y-6 max-w-6xl mx-auto">
               <div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Panel General de Inventarios</h2>
-                <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión en tiempo real del stock, movimientos y auditorías de la compañía.</p>
+                <p className="text-slate-400 text-xs mt-1 font-medium">Supervisión gerencial del stock, rotación de ventas y analítica predictiva.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
@@ -616,7 +620,92 @@ export default function ZonikaApp() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+              {/* NUEVA SECCIÓN: TABLA DE ROTACIÓN Y RENDIMIENTO DE VENTAS CON BARRAS DE COLORES (IA READY) */}
+              <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                      <BarChart3 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Rendimiento de Ventas & Rotación de Productos</h3>
+                      <p className="text-[11px] text-slate-400">Analítica de velocidad de salida y demanda para la toma de decisiones gerenciales.</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded-full font-bold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Zonika AI Ready
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-900/40">
+                        <th className="py-3 px-4">SKU / Producto</th>
+                        <th className="py-3 px-4">Categoría</th>
+                        <th className="py-3 px-4">Demanda / Velocidad</th>
+                        <th className="py-3 px-4 w-52">Porcentaje de Venta / Rotación</th>
+                        <th className="py-3 px-4 text-center">Tendencia IA</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-slate-200 font-medium">
+                      {productSalesPerformance.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3.5 px-4 font-semibold text-white">
+                            <span className="font-mono text-cyan-400 mr-2">{item.id}</span> {item.name}
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-400">{item.category}</td>
+                          <td className="py-3.5 px-4">
+                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${
+                              item.velocity === 'Alta' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                              item.velocity === 'Media' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' :
+                              'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                            }`}>
+                              {item.velocity}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-mono font-bold text-slate-300">
+                                <span>{item.percentage}% del objetivo</span>
+                              </div>
+                              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700/60">
+                                <div 
+                                  className={`h-full rounded-full ${item.statusColor} transition-all duration-500`} 
+                                  style={{ width: `${item.percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            {item.trend === 'up' && <TrendingUp className="w-4 h-4 text-emerald-400 mx-auto" title="Tendencia al alza" />}
+                            {item.trend === 'stable' && <Activity className="w-4 h-4 text-cyan-400 mx-auto" title="Demanda estable" />}
+                            {item.trend === 'down' && <TrendingDown className="w-4 h-4 text-amber-400 mx-auto" title="Baja rotación / Alerta" />}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* ALERTA PREDICTIVA DE IA SIMULADA */}
+                <div className="bg-gradient-to-r from-amber-500/10 via-cyan-500/5 to-emerald-500/10 border border-cyan-500/30 p-4 rounded-xl flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-white flex items-center gap-2">
+                      Zonika AI — Análisis Predictivo de Stock:
+                    </p>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      El producto <strong className="text-amber-400">Etiqueta RFID UHF Zebra (BOD-502)</strong> presenta baja rotación (18%). Se recomienda programar una campaña de promoción o reasignar stock antes de generar sobrecostos de almacenamiento en la Bodega Principal.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                 <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
                     <ClipboardList className="w-4 h-4 text-cyan-400" /> Últimos Movimientos en Sistema
