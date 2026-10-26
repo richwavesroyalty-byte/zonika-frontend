@@ -1,19 +1,63 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   BarChart3, Download, FileText, Calendar, Filter, 
-  Clock, UserCheck, TrendingDown, Sparkles, TrendingUp, Activity, Eye 
+  Clock, UserCheck, TrendingDown, Eye 
 } from 'lucide-react';
 
-export default function ReportsView({ 
-  reportDateRange, setReportDateRange, 
-  reportWarehouseFilter, setReportWarehouseFilter,
-  productSalesPerformance, cycleTimes, 
-  selectedOperatorDate, setSelectedOperatorDate, 
-  currentOperatorsList, setSelectedOperatorDetails, 
-  stockoutForecast, discrepancies, onExportExcel, onExportPDF 
-}) {
+export default function ReportsView({ showNotification }) {
+  const [reportDateRange, setReportDateRange] = useState('today');
+  const [reportWarehouseFilter, setReportWarehouseFilter] = useState('all');
+  const [selectedOperatorDate, setSelectedOperatorDate] = useState('2026-10-24');
+  const [selectedOperatorDetails, setSelectedOperatorDetails] = useState(null);
+
+  const cycleTimes = [
+    { truckId: 'REC-892', plate: 'SGT-881', provider: 'Ferretería Mayorista SAS', arrivalTime: '09:00 a.m.', scanTime: '09:15 a.m.', leadTime: '15 Minutos', status: 'Rápido' },
+  ];
+
+  const historicalOperatorData = {
+    '2026-10-24': [
+      { 
+        id: 'OP-01', name: 'Juan Pérez', role: 'Operador de Muelle', tasksCompleted: 42, efficiency: '96%', status: 'Excelente',
+        hourlyLog: [{ time: '08:15 a.m.', type: 'Recepción Muelle', detail: 'Ingreso Camión SGT-881 (250 ítems)', location: 'Muelle de Carga' }]
+      }
+    ]
+  };
+
+  const currentOperatorsList = historicalOperatorData[selectedOperatorDate] || [];
+
+  const stockoutForecast = [
+    { sku: 'INV-002', name: 'Cámara IP Domo 4K', currentStock: 12, dailyConsumption: 3, daysLeft: 4, risk: 'CRÍTICO' },
+  ];
+
+  const handleExportExcel = () => {
+    if (showNotification) showNotification('📊 Reporte exportado a Excel con éxito.');
+  };
+
+  const handleExportPDF = () => {
+    if (showNotification) showNotification('📄 Informe gerencial generado en PDF.');
+  };
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-12">
+      {selectedOperatorDetails && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0F172A] border border-slate-800 rounded-3xl w-full max-w-xl p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-black text-white">{selectedOperatorDetails.name} — Desglose Horario</h3>
+              <button onClick={() => setSelectedOperatorDetails(null)} className="text-slate-400 hover:text-white font-bold">✕</button>
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {selectedOperatorDetails.hourlyLog.map((l, i) => (
+                <div key={i} className="bg-[#1E293B] p-3 rounded-xl text-xs space-y-1">
+                  <span className="text-cyan-400 font-mono font-bold">{l.time} - {l.type}</span>
+                  <p className="text-slate-300">{l.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CABECERA Y FILTROS */}
       <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -23,13 +67,13 @@ export default function ReportsView({
           </div>
           <div className="flex gap-2">
             <button 
-              onClick={onExportExcel}
+              onClick={handleExportExcel}
               className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all"
             >
               <Download className="w-4 h-4" /> Exportar Excel
             </button>
             <button 
-              onClick={onExportPDF}
+              onClick={handleExportPDF}
               className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all"
             >
               <FileText className="w-4 h-4" /> Exportar PDF
