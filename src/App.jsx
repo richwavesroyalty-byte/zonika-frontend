@@ -18,6 +18,14 @@ import EncoderView from './views/EncoderView';
 import MuelleHistorialView from './views/MuelleHistorialView';
 import ReportsView from './views/ReportsView';
 
+// Importación de Datos Iniciales
+import { 
+  initialInventoryMadefront, 
+  initialInventoryBodega, 
+  initialMovements, 
+  initialMuelleHistorial 
+} from './data/initialState';
+
 export default function ZonikaApp() {
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('zonika_current_user');
@@ -49,33 +57,22 @@ export default function ZonikaApp() {
 
   const [inventoryMadefront, setInventoryMadefront] = useState(() => {
     const saved = localStorage.getItem('zonika_inv_madefront');
-    return saved ? JSON.parse(saved) : [
-      { id: 'INV-001', epc: 'E280689400004001F82B', name: 'Lector Biométrico ZKTeco', category: 'Seguridad', stock: 45, rfidTagged: 45, location: 'Madefront Ferretería - Estante A1', status: 'Optimal' },
-      { id: 'INV-002', epc: 'E280689400004001F82C', name: 'Cámara IP Domo 4K', category: 'CCTV', stock: 12, rfidTagged: 10, location: 'Madefront Ferretería - Estante B3', status: 'Low' },
-    ];
+    return saved ? JSON.parse(saved) : initialInventoryMadefront;
   });
 
   const [inventoryBodega, setInventoryBodega] = useState(() => {
     const saved = localStorage.getItem('zonika_inv_bodega');
-    return saved ? JSON.parse(saved) : [
-      { id: 'BOD-501', epc: 'E280689400005009A11F', name: 'Taladro Percutor Industrial 800W', category: 'Herramientas', stock: 120, rfidTagged: 1200, location: 'Bodega Principal - Pasillo 3', status: 'Optimal' },
-      { id: 'BOD-502', epc: 'E280689400005009A120', name: 'Etiqueta RFID UHF Zebra', category: 'Insumos', stock: 1200, rfidTagged: 1200, location: 'Bodega Principal - Caja 05', status: 'Optimal' },
-    ];
+    return saved ? JSON.parse(saved) : initialInventoryBodega;
   });
 
   const [movements, setMovements] = useState(() => {
     const saved = localStorage.getItem('zonika_movements');
-    return saved ? JSON.parse(saved) : [
-      { id: 'MOV-501', type: 'ENTRADA', item: 'Lector Biométrico ZKTeco', qty: 15, user: 'Carlos Mendoza (Admin)', time: 'Hace 10 min' },
-      { id: 'MOV-502', type: 'SALIDA', item: 'Cámara IP Domo 4K', qty: 2, user: 'Juan Pérez (Muelle)', time: 'Hace 45 min' },
-    ];
+    return saved ? JSON.parse(saved) : initialMovements;
   });
 
   const [muelleHistorial, setMuelleHistorial] = useState(() => {
     const saved = localStorage.getItem('zonika_muelle_historial');
-    return saved ? JSON.parse(saved) : [
-      { id: 'REC-892', ordenCompra: 'PO-44102', placaCamion: 'SGT-881', transportadora: 'TCC Carga', proveedor: 'Ferretería Mayorista SAS', timestamp: '23/10/2026, 09:15:22 a.m.', totalItems: 250, operator: 'Juan Pérez' },
-    ];
+    return saved ? JSON.parse(saved) : initialMuelleHistorial;
   });
 
   const [discrepancies] = useState([
@@ -397,7 +394,6 @@ export default function ZonikaApp() {
 
           {activeTab === 'reports' && (
             <ReportsView 
-              muelleHistorial={muelleHistorial}
               showNotification={showNotification}
             />
           )}
