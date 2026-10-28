@@ -17,6 +17,7 @@ import MovementsView from './views/MovementsView';
 import EncoderView from './views/EncoderView';
 import MuelleHistorialView from './views/MuelleHistorialView';
 import ReportsView from './views/ReportsView';
+import DiscrepancyView from './views/DiscrepancyView'; // <-- Nueva vista de Discrepancias
 
 // Importación de Datos Iniciales
 import { 
@@ -155,7 +156,7 @@ export default function ZonikaApp() {
 
     const rolePermissions = {
       muelle: ['muelle', 'historial_muelle', 'monitor'],
-      bodega: ['inventory', 'add-product', 'movements', 'encoder', 'monitor']
+      bodega: ['inventory', 'add-product', 'movements', 'encoder', 'monitor', 'discrepancies']
     };
 
     return rolePermissions[currentUser.roleKey]?.includes(moduleKey) || false;
@@ -300,6 +301,12 @@ export default function ZonikaApp() {
                 <Printer className="w-4 h-4" /> Grabación / Impresión Tag
               </button>
             )}
+            {/* Nuevo Botón de Discrepancias e Historial */}
+            {(hasAccess('discrepancies') || currentUser.roleKey === 'admin') && (
+              <button onClick={() => setActiveTab('discrepancies')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'discrepancies' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+                <AlertTriangle className="w-4 h-4" /> Discrepancias & Historial
+              </button>
+            )}
             {hasAccess('reports') && (
               <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <BarChart3 className="w-4 h-4" /> Reportes & Analítica
@@ -317,6 +324,7 @@ export default function ZonikaApp() {
           <span className="flex items-center gap-2 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Servidor Middleware Activo
           </span>
+
           <button onClick={() => { setIsReading(!isReading); showNotification(!isReading ? '📡 Escaneo RFID activo...' : '⏹️ Escaneo detenido.'); }} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg ${isReading ? 'bg-amber-500 text-slate-950 animate-pulse' : 'bg-emerald-500 text-slate-950'}`}>
             {isReading ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
             {isReading ? 'DETENER ESCANEO' : 'INICIAR CONTEO RFID'}
@@ -391,6 +399,9 @@ export default function ZonikaApp() {
           )}
 
           {activeTab === 'encoder' && <EncoderView />}
+
+          {/* Nueva Vista de Discrepancias e Historial */}
+          {activeTab === 'discrepancies' && <DiscrepancyView />}
 
           {activeTab === 'reports' && (
             <ReportsView 
