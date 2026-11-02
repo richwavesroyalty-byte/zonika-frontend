@@ -18,6 +18,7 @@ import EncoderView from './views/EncoderView';
 import MuelleHistorialView from './views/MuelleHistorialView';
 import ReportsView from './views/ReportsView';
 import DiscrepancyView from './views/DiscrepancyView';
+import ConfigurationView from './views/ConfigurationView';
 
 // Importación de Datos Iniciales
 import { 
@@ -28,6 +29,9 @@ import {
 } from './data/initialState';
 
 export default function ZonikaApp() {
+  // =====================================
+  // 1. ESTADOS PRINCIPALES
+  // =====================================
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('zonika_current_user');
     return saved ? JSON.parse(saved) : null;
@@ -41,31 +45,29 @@ export default function ZonikaApp() {
   const [inventorySubTab, setInventorySubTab] = useState('madefront');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [notification, setNotification] = useState(null);
-
-  // Estado para controlar el menú lateral en dispositivos móviles / iPhone / Chainway
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Estados para Modales Avanzados de Inventario
+  // Estados de Modales
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deleteReason, setDeleteReason] = useState('Daño físico / Mermas');
   const [deleteDescription, setDeleteDescription] = useState('');
 
-  // Modal de Transferencia entre Almacenes
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [itemToTransfer, setItemToTransfer] = useState(null);
 
-  // Modal de Trazabilidad 360° por Producto
   const [traceModalOpen, setTraceModalOpen] = useState(false);
   const [itemToTrace, setItemToTrace] = useState(null);
 
-  // Modal de Re-codificación RFID (Re-encoding)
   const [recodeModalOpen, setRecodeModalOpen] = useState(false);
   const [itemToRecode, setItemToRecode] = useState(null);
   const [newEpcValue, setNewEpcValue] = useState('');
 
   const [liveActivityFlow, setLiveActivityFlow] = useState([15, 28, 42, 35, 60, 50, 75]);
 
+  // =====================================
+  // 2. EFECTOS Y PERSISTENCIA
+  // =====================================
   useEffect(() => {
     let interval;
     if (isReading) {
@@ -125,49 +127,19 @@ export default function ZonikaApp() {
 
   const [muelleForm, setMuelleForm] = useState({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
   const [newProduct, setNewProduct] = useState({ id: '', name: '', category: 'Herramientas', stock: '', location: '', minStock: 5 });
-  const [newMovement, setNewMovement] = useState({ 
-    type: 'ENTRADA', 
-    item: '', 
-    qty: 1, 
-    reason: 'Reposición de Proveedor', 
-    description: '' 
-  });
+  const [newMovement, setNewMovement] = useState({ type: 'ENTRADA', item: '', qty: 1, reason: 'Reposición de Proveedor', description: '' });
 
-  const handleGoToAddProduct = () => {
-    const defaultCat = selectedCategory !== 'all' ? selectedCategory : 'Herramientas';
-    setNewProduct({ id: '', name: '', category: defaultCat, stock: '', location: '', minStock: 5 });
-    setActiveTab('add-product');
-    setMobileMenuOpen(false);
-  };
+  useEffect(() => { localStorage.setItem('zonika_current_user', JSON.stringify(currentUser)); }, [currentUser]);
+  useEffect(() => { localStorage.setItem('zonika_inv_madefront', JSON.stringify(inventoryMadefront)); }, [inventoryMadefront]);
+  useEffect(() => { localStorage.setItem('zonika_inv_bodega', JSON.stringify(inventoryBodega)); }, [inventoryBodega]);
+  useEffect(() => { localStorage.setItem('zonika_movements', JSON.stringify(movements)); }, [movements]);
+  useEffect(() => { localStorage.setItem('zonika_muelle_historial', JSON.stringify(muelleHistorial)); }, [muelleHistorial]);
+  useEffect(() => { localStorage.setItem('zonika_deleted_history', JSON.stringify(deletedHistory)); }, [deletedHistory]);
+  useEffect(() => { localStorage.setItem('zonika_discrepancies', JSON.stringify(discrepancies)); }, [discrepancies]);
 
-  useEffect(() => {
-    localStorage.setItem('zonika_current_user', JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  useEffect(() => {
-    localStorage.setItem('zonika_inv_madefront', JSON.stringify(inventoryMadefront));
-  }, [inventoryMadefront]);
-
-  useEffect(() => {
-    localStorage.setItem('zonika_inv_bodega', JSON.stringify(inventoryBodega));
-  }, [inventoryBodega]);
-
-  useEffect(() => {
-    localStorage.setItem('zonika_movements', JSON.stringify(movements));
-  }, [movements]);
-
-  useEffect(() => {
-    localStorage.setItem('zonika_muelle_historial', JSON.stringify(muelleHistorial));
-  }, [muelleHistorial]);
-
-  useEffect(() => {
-    localStorage.setItem('zonika_deleted_history', JSON.stringify(deletedHistory));
-  }, [deletedHistory]);
-
-  useEffect(() => {
-    localStorage.setItem('zonika_discrepancies', JSON.stringify(discrepancies));
-  }, [discrepancies]);
-
+  // =====================================
+  // 3. FUNCIONES LÓGICAS
+  // =====================================
   const showNotification = (msg) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
@@ -180,13 +152,9 @@ export default function ZonikaApp() {
     const pass = loginForm.password;
 
     let matchedUser = null;
-    if (email === 'admin@zonika.com' && pass === 'admin123') {
-      matchedUser = { name: 'Carlos Mendoza', role: 'Administrador (Gerente)', roleKey: 'admin' };
-    } else if (email === 'muelle@zonika.com' && pass === 'muelle123') {
-      matchedUser = { name: 'Juan Pérez', role: 'Operador de Muelle', roleKey: 'muelle' };
-    } else if (email === 'bodega@zonika.com' && pass === 'bodega123') {
-      matchedUser = { name: 'Sonia Gómez', role: 'Encargada de Bodega', roleKey: 'bodega' };
-    }
+    if (email === 'admin@zonika.com' && pass === 'admin123') matchedUser = { name: 'Carlos Mendoza', role: 'Administrador (Gerente)', roleKey: 'admin' };
+    else if (email === 'muelle@zonika.com' && pass === 'muelle123') matchedUser = { name: 'Juan Pérez', role: 'Operador de Muelle', roleKey: 'muelle' };
+    else if (email === 'bodega@zonika.com' && pass === 'bodega123') matchedUser = { name: 'Sonia Gómez', role: 'Encargada de Bodega', roleKey: 'bodega' };
 
     if (matchedUser) {
       setCurrentUser(matchedUser);
@@ -197,13 +165,9 @@ export default function ZonikaApp() {
   };
 
   const handleQuickLogin = (roleType) => {
-    if (roleType === 'admin') {
-      setCurrentUser({ name: 'Carlos Mendoza', role: 'Administrador (Gerente)', roleKey: 'admin' });
-    } else if (roleType === 'muelle') {
-      setCurrentUser({ name: 'Juan Pérez', role: 'Operador de Muelle', roleKey: 'muelle' });
-    } else if (roleType === 'bodega') {
-      setCurrentUser({ name: 'Sonia Gómez', role: 'Encargada de Bodega', roleKey: 'bodega' });
-    }
+    if (roleType === 'admin') setCurrentUser({ name: 'Carlos Mendoza', role: 'Administrador (Gerente)', roleKey: 'admin' });
+    else if (roleType === 'muelle') setCurrentUser({ name: 'Juan Pérez', role: 'Operador de Muelle', roleKey: 'muelle' });
+    else if (roleType === 'bodega') setCurrentUser({ name: 'Sonia Gómez', role: 'Encargada de Bodega', roleKey: 'bodega' });
     showNotification('🚀 ¡Acceso rápido concedido!');
   };
 
@@ -221,8 +185,14 @@ export default function ZonikaApp() {
       muelle: ['muelle', 'historial_muelle', 'monitor'],
       bodega: ['inventory', 'add-product', 'movements', 'encoder', 'monitor', 'discrepancies']
     };
-
     return rolePermissions[currentUser.roleKey]?.includes(moduleKey) || false;
+  };
+
+  const handleGoToAddProduct = () => {
+    const defaultCat = selectedCategory !== 'all' ? selectedCategory : 'Herramientas';
+    setNewProduct({ id: '', name: '', category: defaultCat, stock: '', location: '', minStock: 5 });
+    setActiveTab('add-product');
+    setMobileMenuOpen(false);
   };
 
   const handleAddProduct = (e) => {
@@ -235,23 +205,24 @@ export default function ZonikaApp() {
       minStock: parseInt(newProduct.minStock) || 5,
       location: inventorySubTab === 'madefront' ? 'Madefront Ferretería' : 'Bodega Principal'
     };
-    if (inventorySubTab === 'madefront') {
-      setInventoryMadefront([item, ...inventoryMadefront]);
-    } else {
-      setInventoryBodega([item, ...inventoryBodega]);
-    }
+    if (inventorySubTab === 'madefront') setInventoryMadefront([item, ...inventoryMadefront]);
+    else setInventoryBodega([item, ...inventoryBodega]);
+    
     setNewProduct({ id: '', name: '', category: 'Herramientas', stock: '', location: '', minStock: 5 });
     setActiveTab('inventory');
     showNotification('¡Producto registrado con éxito en su categoría!');
   };
 
+  // --- LÓGICA DE TRANSFERENCIA CORREGIDA ---
   const initiateTransfer = (item, currentWarehouse) => {
     setItemToTransfer({ item, currentWarehouse });
     setTransferModalOpen(true);
   };
 
   const confirmTransfer = (targetWarehouse) => {
-    if (!itemToTransfer) return;
+    // Validación de seguridad antes de ejecutar la lógica
+    if (!itemToTransfer || !itemToTransfer.item) return;
+    
     const { item, currentWarehouse } = itemToTransfer;
 
     if (currentWarehouse === 'madefront' && targetWarehouse === 'bodega') {
@@ -272,8 +243,8 @@ export default function ZonikaApp() {
       user: currentUser ? currentUser.name : 'Sistema',
       time: new Date().toLocaleString()
     };
+    
     setMovements(prev => [mov, ...prev]);
-
     setTransferModalOpen(false);
     setItemToTransfer(null);
     showNotification('🔄 ¡Transferencia entre almacenes completada con éxito!');
@@ -295,7 +266,6 @@ export default function ZonikaApp() {
     if (!itemToRecode || !newEpcValue) return;
 
     const updateList = (list) => list.map(p => p.id === itemToRecode.id ? { ...p, epc: newEpcValue } : p);
-
     setInventoryMadefront(updateList);
     setInventoryBodega(updateList);
 
@@ -314,15 +284,12 @@ export default function ZonikaApp() {
 
   const confirmDeleteProduct = (e) => {
     e.preventDefault();
-    if (!itemToDelete) return;
+    if (!itemToDelete || !itemToDelete.item) return;
 
     const { item, warehouseType } = itemToDelete;
 
-    if (warehouseType === 'madefront') {
-      setInventoryMadefront(prev => prev.filter(p => p.id !== item.id));
-    } else {
-      setInventoryBodega(prev => prev.filter(p => p.id !== item.id));
-    }
+    if (warehouseType === 'madefront') setInventoryMadefront(prev => prev.filter(p => p.id !== item.id));
+    else setInventoryBodega(prev => prev.filter(p => p.id !== item.id));
 
     const deleteRecord = {
       id: 'DEL-' + Math.floor(1000 + Math.random() * 9000),
@@ -396,6 +363,9 @@ export default function ZonikaApp() {
   const totalStockMadefront = inventoryMadefront.reduce((acc, item) => acc + Number(item.stock), 0);
   const totalStockBodega = inventoryBodega.reduce((acc, item) => acc + Number(item.stock), 0);
 
+  // =====================================
+  // 4. RENDERIZADO DE LOGIN Y VISTA PRINCIPAL
+  // =====================================
   if (!currentUser) {
     return (
       <div className="flex min-h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans items-center justify-center p-4">
@@ -430,6 +400,8 @@ export default function ZonikaApp() {
 
   return (
     <div className="flex min-h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans relative overflow-x-hidden">
+      
+      {/* NOTIFICACIONES TOAST */}
       {notification && (
         <div className="fixed top-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-cyan-300 animate-bounce">
           <CheckCircle2 className="w-5 h-5" />
@@ -437,8 +409,12 @@ export default function ZonikaApp() {
         </div>
       )}
 
-      {/* Modal de Trazabilidad y Eliminación Inalterable */}
-      {deleteModalOpen && itemToDelete && (
+      {/* ==================================================== */}
+      {/* SECCIÓN DE MODALES (Con validación ?. segura) */}
+      {/* ==================================================== */}
+
+      {/* Modal de Eliminación Inalterable */}
+      {deleteModalOpen && itemToDelete?.item && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-700 pb-3">
@@ -474,7 +450,7 @@ export default function ZonikaApp() {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Descripción Detallada (Justificación obligatoria)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Descripción Detallada</label>
                 <textarea 
                   rows="3"
                   placeholder="Explique el porqué y para qué se retira este registro..."
@@ -499,7 +475,7 @@ export default function ZonikaApp() {
       )}
 
       {/* Modal de Transferencia Rápida entre Almacenes */}
-      {transferModalOpen && itemToTransfer && (
+      {transferModalOpen && itemToTransfer?.item && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-700 pb-3">
@@ -527,14 +503,14 @@ export default function ZonikaApp() {
                     onClick={() => confirmTransfer('bodega')}
                     className="p-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl text-center transition-all shadow-md uppercase"
                   >
-                    🏭 Enviar a Bodega Principal
+                    🏭 Enviar a Bodega
                   </button>
                 ) : (
                   <button 
                     onClick={() => confirmTransfer('madefront')}
                     className="p-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl text-center transition-all shadow-md uppercase"
                   >
-                    🏪 Enviar a Madefront Ferretería
+                    🏪 Enviar a Madefront
                   </button>
                 )}
                 <button 
@@ -549,14 +525,14 @@ export default function ZonikaApp() {
         </div>
       )}
 
-      {/* Modal de Trazabilidad 360° por Producto */}
+      {/* Modal de Trazabilidad 360° */}
       {traceModalOpen && itemToTrace && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-700 pb-3">
               <div className="flex items-center gap-2 text-cyan-400">
                 <Shield className="w-5 h-5" />
-                <h3 className="text-sm font-black uppercase tracking-wider text-white">Trazabilidad 360° — Línea de Tiempo SKU</h3>
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">Trazabilidad 360° — Línea de Tiempo</h3>
               </div>
               <button onClick={() => setTraceModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -587,13 +563,13 @@ export default function ZonikaApp() {
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Historial de Custodia (Log de Eventos)</h4>
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Historial de Custodia</h4>
               <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-3 text-xs space-y-3 max-h-44 overflow-y-auto">
                 <div className="flex items-start gap-3 border-b border-slate-800 pb-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1"></div>
                   <div>
                     <p className="font-bold text-white">Ingreso por Muelle (PO-44102)</p>
-                    <p className="text-[10px] text-slate-400">Validado mediante antena Zebra FX9600 — Operador: Juan Pérez</p>
+                    <p className="text-[10px] text-slate-400">Validado mediante antena Zebra FX9600</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 border-b border-slate-800 pb-2">
@@ -622,14 +598,14 @@ export default function ZonikaApp() {
         </div>
       )}
 
-      {/* Modal de Re-codificación RFID (Re-encoding) */}
+      {/* Modal de Re-codificación RFID */}
       {recodeModalOpen && itemToRecode && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-700 pb-3">
               <div className="flex items-center gap-2 text-cyan-400">
                 <Tag className="w-5 h-5" />
-                <h3 className="text-sm font-black uppercase tracking-wider text-white">Re-codificación de Tag RFID (Re-encoding)</h3>
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">Re-codificación de Tag RFID</h3>
               </div>
               <button onClick={() => setRecodeModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -666,7 +642,11 @@ export default function ZonikaApp() {
         </div>
       )}
 
-      {/* Fondo oscuro para móvil cuando el menú está abierto */}
+      {/* ==================================================== */}
+      {/* UI PRINCIPAL (Sidebar y Contenido)                   */}
+      {/* ==================================================== */}
+
+      {/* Fondo oscuro para móvil */}
       {mobileMenuOpen && (
         <div 
           className="fixed inset-0 z-40 bg-black/70 backdrop-blur-xs md:hidden"
@@ -674,7 +654,7 @@ export default function ZonikaApp() {
         ></div>
       )}
 
-      {/* Sidebar Responsive (Drawer móvil con altura flexible y scroll interno) */}
+      {/* Sidebar Responsive */}
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50 w-64 bg-[#0F172A] border-r border-slate-800 
         flex flex-col justify-between p-4 shrink-0 transition-transform duration-300 ease-in-out
@@ -690,7 +670,6 @@ export default function ZonikaApp() {
                 <span className="text-[10px] text-cyan-400 font-semibold">{currentUser.name}</span>
               </div>
             </div>
-            {/* Botón para cerrar menú en móviles */}
             <button 
               type="button"
               onClick={() => setMobileMenuOpen(false)} 
@@ -773,6 +752,15 @@ export default function ZonikaApp() {
                 <BarChart3 className="w-4 h-4" /> Reportes & Analítica
               </button>
             )}
+            {currentUser.roleKey === 'admin' && (
+              <button 
+                type="button"
+                onClick={() => { setActiveTab('configuration'); setMobileMenuOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs mt-2 border border-indigo-500/30 ${activeTab === 'configuration' ? 'bg-indigo-500 text-white font-bold shadow-md' : 'text-indigo-300 hover:bg-slate-800 bg-indigo-500/10'}`}
+              >
+                <Settings className="w-4 h-4" /> Configuración y HW
+              </button>
+            )}
           </nav>
         </div>
         <button type="button" onClick={handleLogout} className="text-red-400 text-xs font-bold flex items-center gap-2 p-2 hover:bg-slate-800 rounded-xl transition-colors mt-4">
@@ -783,12 +771,10 @@ export default function ZonikaApp() {
       <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120] min-h-[100dvh]">
         <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-4 sm:px-8 shrink-0 z-20 sticky top-0">
           <div className="flex items-center gap-3">
-            {/* Botón de Menú Hamburguesa para móviles y iPhone */}
             <button 
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded-xl transition-all"
-              title="Abrir Menú"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -812,32 +798,21 @@ export default function ZonikaApp() {
         <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
           {activeTab === 'dashboard' && (
             <DashboardView 
-              totalStockMadefront={totalStockMadefront}
-              totalStockBodega={totalStockBodega}
-              movementsLength={movements.length}
-              discrepanciesLength={discrepancies.length}
-              inventoryMadefrontLength={inventoryMadefront.length}
-              inventoryBodegaLength={inventoryBodega.length}
-              liveActivityFlow={liveActivityFlow}
-              isReading={isReading}
-              showNotification={showNotification}
+              totalStockMadefront={totalStockMadefront} totalStockBodega={totalStockBodega}
+              movementsLength={movements.length} discrepanciesLength={discrepancies.length}
+              inventoryMadefrontLength={inventoryMadefront.length} inventoryBodegaLength={inventoryBodega.length}
+              liveActivityFlow={liveActivityFlow} isReading={isReading} showNotification={showNotification}
             />
           )}
 
           {activeTab === 'inventory' && (
             <InventoryView 
-              inventorySubTab={inventorySubTab}
-              setInventorySubTab={setInventorySubTab}
-              inventoryMadefront={inventoryMadefront}
-              inventoryBodega={inventoryBodega}
-              setActiveTab={handleGoToAddProduct}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
-              onDeleteProduct={initiateDeleteProduct}
-              onTransferProduct={initiateTransfer}
-              onOpenTraceability={openTraceability}
-              onRecodeProduct={openRecodeModal}
-              showNotification={showNotification}
+              inventorySubTab={inventorySubTab} setInventorySubTab={setInventorySubTab}
+              inventoryMadefront={inventoryMadefront} setInventoryMadefront={setInventoryMadefront}
+              inventoryBodega={inventoryBodega} setInventoryBodega={setInventoryBodega}
+              setActiveTab={handleGoToAddProduct} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
+              onDeleteProduct={initiateDeleteProduct} onTransferProduct={initiateTransfer}
+              onOpenTraceability={openTraceability} onRecodeProduct={openRecodeModal} showNotification={showNotification}
             />
           )}
 
@@ -845,9 +820,7 @@ export default function ZonikaApp() {
             <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-6 sm:p-8 rounded-2xl shadow-xl">
               <div className="flex justify-between items-center border-b border-slate-700/80 pb-3">
                 <h2 className="text-xl font-black text-white uppercase tracking-wider">Registrar Nuevo Producto</h2>
-                <span className="text-xs bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full font-bold">
-                  Categoría: {newProduct.category}
-                </span>
+                <span className="text-xs bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full font-bold">Categoría: {newProduct.category}</span>
               </div>
               <form onSubmit={handleAddProduct} className="space-y-4">
                 <div>
@@ -860,15 +833,8 @@ export default function ZonikaApp() {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Categoría (Sincronizada)</label>
-                  <select 
-                    value={newProduct.category} 
-                    onChange={(e)=>setNewProduct({...newProduct, category: e.target.value})}
-                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white font-bold focus:outline-none focus:border-cyan-500 cursor-pointer"
-                  >
-                    <option value="Herramientas">Herramientas</option>
-                    <option value="Seguridad">Seguridad</option>
-                    <option value="CCTV">CCTV</option>
-                    <option value="Insumos">Insumos</option>
+                  <select value={newProduct.category} onChange={(e)=>setNewProduct({...newProduct, category: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white font-bold focus:outline-none focus:border-cyan-500 cursor-pointer">
+                    <option value="Herramientas">Herramientas</option><option value="Seguridad">Seguridad</option><option value="CCTV">CCTV</option><option value="Insumos">Insumos</option>
                   </select>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -890,46 +856,25 @@ export default function ZonikaApp() {
           )}
 
           {activeTab === 'muelle' && (
-            <MuelleView 
-              muelleForm={muelleForm}
-              setMuelleForm={setMuelleForm}
-              handleRegisterTruckEntry={handleRegisterTruckEntry}
-              onReportDiscrepancy={handleReportMuelleDiscrepancy}
-              showNotification={showNotification}
-            />
+            <MuelleView muelleForm={muelleForm} setMuelleForm={setMuelleForm} handleRegisterTruckEntry={handleRegisterTruckEntry} onReportDiscrepancy={handleReportMuelleDiscrepancy} showNotification={showNotification} />
           )}
 
           {activeTab === 'historial_muelle' && (
-            <MuelleHistorialView 
-              muelleHistorial={muelleHistorial}
-              setMuelleHistorial={setMuelleHistorial}
-              currentUser={currentUser}
-              showNotification={showNotification}
-            />
+            <MuelleHistorialView muelleHistorial={muelleHistorial} setMuelleHistorial={setMuelleHistorial} currentUser={currentUser} showNotification={showNotification} />
           )}
 
           {activeTab === 'movements' && (
-            <MovementsView 
-              newMovement={newMovement}
-              setNewMovement={setNewMovement}
-              handleAddMovement={handleAddMovement}
-              movements={movements}
-            />
+            <MovementsView newMovement={newMovement} setNewMovement={setNewMovement} handleAddMovement={handleAddMovement} movements={movements} />
           )}
 
           {activeTab === 'encoder' && <EncoderView />}
 
-          {activeTab === 'discrepancies' && (
-            <DiscrepancyView 
-              discrepancies={discrepancies}
-              deletedHistory={deletedHistory}
-            />
-          )}
+          {activeTab === 'discrepancies' && <DiscrepancyView discrepancies={discrepancies} deletedHistory={deletedHistory} />}
 
-          {activeTab === 'reports' && (
-            <ReportsView 
-              showNotification={showNotification}
-            />
+          {activeTab === 'reports' && <ReportsView showNotification={showNotification} />}
+
+          {activeTab === 'configuration' && currentUser.roleKey === 'admin' && (
+            <ConfigurationView inventoryMadefront={inventoryMadefront} inventoryBodega={inventoryBodega} showNotification={showNotification} />
           )}
         </div>
       </main>
