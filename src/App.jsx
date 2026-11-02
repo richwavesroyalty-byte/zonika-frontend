@@ -17,7 +17,7 @@ import MovementsView from './views/MovementsView';
 import EncoderView from './views/EncoderView';
 import MuelleHistorialView from './views/MuelleHistorialView';
 import ReportsView from './views/ReportsView';
-import DiscrepancyView from './views/DiscrepancyView'; // <-- Nueva vista de Discrepancias
+import DiscrepancyView from './views/DiscrepancyView';
 
 // Importación de Datos Iniciales
 import { 
@@ -39,7 +39,14 @@ export default function ZonikaApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isReading, setIsReading] = useState(false);
   const [inventorySubTab, setInventorySubTab] = useState('madefront');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [notification, setNotification] = useState(null);
+
+  // Estado para Modal de Eliminación con Trazabilidad
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('Daño físico / Mermas');
+  const [deleteDescription, setDeleteDescription] = useState('');
 
   const [liveActivityFlow, setLiveActivityFlow] = useState([15, 28, 42, 35, 60, 50, 75]);
 
@@ -76,13 +83,47 @@ export default function ZonikaApp() {
     return saved ? JSON.parse(saved) : initialMuelleHistorial;
   });
 
-  const [discrepancies] = useState([
-    { id: 'DISC-101', sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, location: 'Madefront Ferretería - Estante B3', cause: 'Posible extravío' },
-  ]);
+  // Historial de eliminados inalterable
+  const [deletedHistory, setDeletedHistory] = useState(() => {
+    const saved = localStorage.getItem('zonika_deleted_history');
+    return saved ? JSON.parse(saved) : [
+      {
+        id: 'DEL-991',
+        sku: 'INV-999',
+        name: 'Lector Antiguo Dañado',
+        category: 'Seguridad',
+        location: 'Madefront Ferretería',
+        reason: 'Daño físico irreversible',
+        description: 'Equipo golpeado durante maniobra de descarga en estante A1.',
+        user: 'Carlos Mendoza (Admin)',
+        timestamp: '24/10/2026, 10:30:15 a.m.'
+      }
+    ];
+  });
+
+  // Discrepancias (incluyendo muelle y auditoría)
+  const [discrepancies, setDiscrepancies] = useState(() => {
+    const saved = localStorage.getItem('zonika_discrepancies');
+    return saved ? JSON.parse(saved) : [
+      { id: 'DISC-101', sku: 'INV-002', item: 'Cámara IP Domo 4K', expected: 12, rfidCount: 10, diff: -2, location: 'Madefront Ferretería - Estante B3', cause: 'Posible extravío / Sin etiqueta RFID' },
+    ];
+  });
 
   const [muelleForm, setMuelleForm] = useState({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
   const [newProduct, setNewProduct] = useState({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
-  const [newMovement, setNewMovement] = useState({ type: 'ENTRADA', item: '', qty: 1 });
+  const [newMovement, setNewMovement] = useState({ 
+    type: 'ENTRADA', 
+    item: '', 
+    qty: 1, 
+    reason: 'Reposición de Proveedor', 
+    description: '' 
+  });
+
+  const handleGoToAddProduct = () => {
+    const defaultCat = selectedCategory !== 'all' ? selectedCategory : 'Herramientas';
+    setNewProduct({ id: '', name: '', category: defaultCat, stock: '', location: '' });
+    setActiveTab('add-product');
+  };
 
   useEffect(() => {
     localStorage.setItem('zonika_current_user', JSON.stringify(currentUser));
@@ -103,6 +144,14 @@ export default function ZonikaApp() {
   useEffect(() => {
     localStorage.setItem('zonika_muelle_historial', JSON.stringify(muelleHistorial));
   }, [muelleHistorial]);
+
+  useEffect(() => {
+    localStorage.setItem('zonika_deleted_history', JSON.stringify(deletedHistory));
+  }, [deletedHistory]);
+
+  useEffect(() => {
+    localStorage.setItem('zonika_discrepancies', JSON.stringify(discrepancies));
+  }, [discrepancies]);
 
   const showNotification = (msg) => {
     setNotification(msg);
@@ -149,7 +198,6 @@ export default function ZonikaApp() {
     showNotification('🔒 Sesión cerrada.');
   };
 
-  // CONTROL DE ACCESO RBAC (Administrador tiene acceso total absoluto)
   const hasAccess = (moduleKey) => {
     if (!currentUser) return false;
     if (currentUser.roleKey === 'admin') return true; 
@@ -179,7 +227,59 @@ export default function ZonikaApp() {
     }
     setNewProduct({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
     setActiveTab('inventory');
-    showNotification('¡Producto registrado con éxito!');
+    showNotification('¡Producto registrado con éxito en su categoría!');
+  };
+
+  const initiateDeleteProduct = (item, warehouseType) => {
+    setItemToDelete({ item, warehouseType });
+    setDeleteReason('Daño físico / Mermas');
+    setDeleteDescription('');
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteProduct = (e) => {
+    e.preventDefault();
+    if (!itemToDelete) return;
+
+    const { item, warehouseType } = itemToDelete;
+
+    if (warehouseType === 'madefront') {
+      setInventoryMadefront(prev => prev.filter(p => p.id !== item.id));
+    } else {
+      setInventoryBodega(prev => prev.filter(p => p.id !== item.id));
+    }
+
+    const deleteRecord = {
+      id: 'DEL-' + Math.floor(1000 + Math.random() * 9000),
+      sku: item.id,
+      name: item.name,
+      category: item.category || 'General',
+      location: item.location || (warehouseType === 'madefront' ? 'Madefront Ferretería' : 'Bodega Principal'),
+      reason: deleteReason,
+      description: deleteDescription || 'Sin descripción detallada proporcionada.',
+      user: currentUser ? currentUser.name : 'Sistema',
+      timestamp: new Date().toLocaleString()
+    };
+
+    setDeletedHistory(prev => [deleteRecord, ...prev]);
+    setDeleteModalOpen(false);
+    setItemToDelete(null);
+    showNotification('🗑️ Producto eliminado y registrado en Discrepancias & Historial (Inalterable)');
+  };
+
+  const handleReportMuelleDiscrepancy = (discData) => {
+    const newDisc = {
+      id: 'DISC-' + Math.floor(100 + Math.random() * 900),
+      sku: discData.sku,
+      item: discData.name,
+      expected: discData.expected,
+      rfidCount: discData.read,
+      diff: discData.read - discData.expected,
+      location: `Muelle - PO: ${discData.ordenCompra || 'N/A'} (Placa: ${discData.placaCamion || 'N/A'})`,
+      cause: `${discData.reason}: ${discData.description} (Reportado por ${currentUser ? currentUser.name : 'Operador'})`
+    };
+    setDiscrepancies(prev => [newDisc, ...prev]);
+    showNotification('⚠️ Discrepancia de muelle registrada con trazabilidad en Discrepancias.');
   };
 
   const handleAddMovement = (e) => {
@@ -190,12 +290,14 @@ export default function ZonikaApp() {
       type: newMovement.type,
       item: newMovement.item,
       qty: parseInt(newMovement.qty),
-      user: currentUser.name,
-      time: 'Justo ahora'
+      reason: newMovement.reason || 'Reposición de Proveedor',
+      description: newMovement.description || 'Sin descripción detallada.',
+      user: currentUser ? currentUser.name : 'Sistema',
+      time: new Date().toLocaleString()
     };
     setMovements([mov, ...movements]);
-    setNewMovement({ type: 'ENTRADA', item: '', qty: 1 });
-    showNotification('¡Movimiento registrado con éxito!');
+    setNewMovement({ type: 'ENTRADA', item: '', qty: 1, reason: 'Reposición de Proveedor', description: '' });
+    showNotification('🔒 ¡Movimiento registrado con trazabilidad de auditoría!');
   };
 
   const handleRegisterTruckEntry = (e) => {
@@ -252,11 +354,77 @@ export default function ZonikaApp() {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans overflow-hidden">
+    <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans overflow-hidden relative">
       {notification && (
         <div className="fixed top-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-cyan-300 animate-bounce">
           <CheckCircle2 className="w-5 h-5" />
           <span>{notification}</span>
+        </div>
+      )}
+
+      {/* Modal de Trazabilidad y Eliminación Inalterable */}
+      {deleteModalOpen && itemToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scaleIn">
+            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+              <div className="flex items-center gap-2 text-rose-400">
+                <ShieldAlert className="w-5 h-5" />
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">Autorización de Baja y Trazabilidad</h3>
+              </div>
+              <button onClick={() => setDeleteModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+              <p className="text-slate-400">Producto a eliminar:</p>
+              <p className="font-bold text-white text-sm">{itemToDelete.item.name} <span className="text-cyan-400 font-mono">({itemToDelete.item.id})</span></p>
+              <p className="text-[10px] text-slate-400">Ubicación: {itemToDelete.item.location}</p>
+            </div>
+
+            <form onSubmit={confirmDeleteProduct} className="space-y-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Motivo Principal de Baja</label>
+                <select 
+                  value={deleteReason} 
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-rose-500 cursor-pointer"
+                >
+                  <option value="Daño físico / Mermas">Daño físico / Mermas</option>
+                  <option value="Extravío o hurto">Extravío o hurto</option>
+                  <option value="Obsolescencia o caducidad">Obsolescencia o caducidad</option>
+                  <option value="Error de ingreso en sistema">Error de ingreso en sistema</option>
+                  <option value="Traslado externo definitivo">Traslado externo definitivo</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Descripción Detallada (Justificación obligatoria)</label>
+                <textarea 
+                  rows="3"
+                  placeholder="Explique el porqué y para qué se retira este registro del inventario activo..."
+                  value={deleteDescription}
+                  onChange={(e) => setDeleteDescription(e.target.value)}
+                  className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs text-white focus:outline-none focus:border-rose-500"
+                  required
+                ></textarea>
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl text-[10px] text-amber-300 font-medium flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                <span>Aviso: Este registro quedará guardado permanentemente en el Historial Inalterable de Discrepancias y no podrá ser borrado por ningún usuario.</span>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs py-3 rounded-xl uppercase tracking-wider transition-all shadow-lg">
+                  Confirmar Baja Definitiva
+                </button>
+                <button type="button" onClick={() => setDeleteModalOpen(false)} className="bg-slate-800 text-slate-300 font-bold text-xs px-5 py-3 rounded-xl hover:bg-slate-700">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -301,7 +469,6 @@ export default function ZonikaApp() {
                 <Printer className="w-4 h-4" /> Grabación / Impresión Tag
               </button>
             )}
-            {/* Nuevo Botón de Discrepancias e Historial */}
             {(hasAccess('discrepancies') || currentUser.roleKey === 'admin') && (
               <button onClick={() => setActiveTab('discrepancies')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'discrepancies' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <AlertTriangle className="w-4 h-4" /> Discrepancias & Historial
@@ -353,19 +520,49 @@ export default function ZonikaApp() {
               setInventorySubTab={setInventorySubTab}
               inventoryMadefront={inventoryMadefront}
               inventoryBodega={inventoryBodega}
-              setActiveTab={setActiveTab}
+              setActiveTab={handleGoToAddProduct}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              onDeleteProduct={initiateDeleteProduct}
             />
           )}
 
           {activeTab === 'add-product' && (
             <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
-              <h2 className="text-xl font-black text-white uppercase tracking-wider">Registrar Nuevo Producto</h2>
+              <div className="flex justify-between items-center border-b border-slate-700/80 pb-3">
+                <h2 className="text-xl font-black text-white uppercase tracking-wider">Registrar Nuevo Producto</h2>
+                <span className="text-xs bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full font-bold">
+                  Categoría: {newProduct.category}
+                </span>
+              </div>
               <form onSubmit={handleAddProduct} className="space-y-4">
-                <input type="text" placeholder="SKU (Ej. INV-005)" value={newProduct.id} onChange={(e)=>setNewProduct({...newProduct, id: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white" required />
-                <input type="text" placeholder="Nombre del Artículo" value={newProduct.name} onChange={(e)=>setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white" required />
-                <input type="number" placeholder="Stock Inicial" value={newProduct.stock} onChange={(e)=>setNewProduct({...newProduct, stock: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white" required />
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">SKU del Producto</label>
+                  <input type="text" placeholder="Ej. INV-005" value={newProduct.id} onChange={(e)=>setNewProduct({...newProduct, id: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500" required />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Nombre del Artículo</label>
+                  <input type="text" placeholder="Nombre descriptivo..." value={newProduct.name} onChange={(e)=>setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500" required />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Categoría (Sincronizada)</label>
+                  <select 
+                    value={newProduct.category} 
+                    onChange={(e)=>setNewProduct({...newProduct, category: e.target.value})}
+                    className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white font-bold focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  >
+                    <option value="Herramientas">Herramientas</option>
+                    <option value="Seguridad">Seguridad</option>
+                    <option value="CCTV">CCTV</option>
+                    <option value="Insumos">Insumos</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Stock Inicial</label>
+                  <input type="number" placeholder="Cantidad..." value={newProduct.stock} onChange={(e)=>setNewProduct({...newProduct, stock: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500" required />
+                </div>
                 <div className="flex gap-3 pt-2">
-                  <button type="submit" className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs py-3.5 rounded-xl uppercase">Guardar Producto</button>
+                  <button type="submit" className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs py-3.5 rounded-xl uppercase tracking-wider">Guardar Producto</button>
                   <button type="button" onClick={() => setActiveTab('inventory')} className="bg-slate-800 text-slate-300 font-bold text-xs px-6 py-3.5 rounded-xl">Cancelar</button>
                 </div>
               </form>
@@ -377,6 +574,8 @@ export default function ZonikaApp() {
               muelleForm={muelleForm}
               setMuelleForm={setMuelleForm}
               handleRegisterTruckEntry={handleRegisterTruckEntry}
+              onReportDiscrepancy={handleReportMuelleDiscrepancy}
+              showNotification={showNotification}
             />
           )}
 
@@ -400,8 +599,12 @@ export default function ZonikaApp() {
 
           {activeTab === 'encoder' && <EncoderView />}
 
-          {/* Nueva Vista de Discrepancias e Historial */}
-          {activeTab === 'discrepancies' && <DiscrepancyView />}
+          {activeTab === 'discrepancies' && (
+            <DiscrepancyView 
+              discrepancies={discrepancies}
+              deletedHistory={deletedHistory}
+            />
+          )}
 
           {activeTab === 'reports' && (
             <ReportsView 

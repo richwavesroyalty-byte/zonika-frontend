@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Truck, Radio, Play, Square, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Truck, Radio, Play, Square, CheckCircle2, AlertTriangle, RefreshCw, X, ShieldAlert } from 'lucide-react';
 
 export default function MuelleView({
   muelleForm,
   setMuelleForm,
   handleRegisterTruckEntry,
+  onReportDiscrepancy,
   showNotification
 }) {
   const [muelleReading, setMuelleReading] = useState(false);
@@ -14,11 +15,16 @@ export default function MuelleView({
     { id: 3, sku: 'INV-003', name: 'Etiqueta RFID UHF Zebra', expected: 500, read: 500, status: 'Completado' },
   ]);
 
+  // Estado para el Modal de Discrepancias en Muelle
+  const [discModalOpen, setDiscModalOpen] = useState(false);
+  const [selectedItemForDisc, setSelectedItemForDisc] = useState(null);
+  const [discReason, setDiscReason] = useState('Faltante físico en entrega');
+  const [discDescription, setDiscDescription] = useState('');
+
   const handleSimulateAntennaRead = () => {
     setMuelleReading(!muelleReading);
     if (!muelleReading) {
       if (showNotification) showNotification('📡 Antena Zebra FX9600 (Muelle) transmitiendo... Leyendo tags UHF.');
-      // Simular incremento de lectura en tiempo real
       setTimeout(() => {
         setMuelleItems(prev => prev.map(item => item.sku === 'INV-001' ? { ...item, read: 50, status: 'Completado' } : item));
         if (showNotification) showNotification('✅ ¡Lote de camión verificado al 100% por RFID!');
@@ -28,8 +34,99 @@ export default function MuelleView({
     }
   };
 
+  const openDiscModal = (item) => {
+    setSelectedItemForDisc(item);
+    setDiscReason('Faltante físico en entrega');
+    setDiscDescription('');
+    setDiscModalOpen(true);
+  };
+
+  const submitDiscrepancyReport = (e) => {
+    e.preventDefault();
+    if (!selectedItemForDisc) return;
+
+    if (onReportDiscrepancy) {
+      onReportDiscrepancy({
+        ...selectedItemForDisc,
+        ordenCompra: muelleForm.ordenCompra,
+        placaCamion: muelleForm.placaCamion,
+        reason: discReason,
+        description: discDescription
+      });
+    }
+
+    setDiscModalOpen(false);
+    setSelectedItemForDisc(null);
+  };
+
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+    <div className="space-y-8 max-w-6xl mx-auto pb-12 relative">
+      {/* Modal de Reporte de Discrepancia en Muelle */}
+      {discModalOpen && selectedItemForDisc && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scaleIn">
+            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+              <div className="flex items-center gap-2 text-amber-400">
+                <ShieldAlert className="w-5 h-5" />
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">Reportar Discrepancia de Muelle</h3>
+              </div>
+              <button onClick={() => setDiscModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+              <p className="text-slate-400">Artículo con diferencia:</p>
+              <p className="font-bold text-white text-sm">{selectedItemForDisc.name} <span className="text-cyan-400 font-mono">({selectedItemForDisc.sku})</span></p>
+              <p className="text-[10px] text-slate-400">Esperado: <strong className="text-white">{selectedItemForDisc.expected} un</strong> | Leído RFID: <strong className="text-amber-400">{selectedItemForDisc.read} un</strong> (Faltante: {selectedItemForDisc.read - selectedItemForDisc.expected} un)</p>
+            </div>
+
+            <form onSubmit={submitDiscrepancyReport} className="space-y-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Motivo de Discrepancia</label>
+                <select 
+                  value={discReason} 
+                  onChange={(e) => setDiscReason(e.target.value)}
+                  className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-amber-500 cursor-pointer"
+                >
+                  <option value="Faltante físico en entrega">Faltante físico en entrega</option>
+                  <option value="Caja dañada / Merma en tránsito">Caja dañada / Merma en tránsito</option>
+                  <option value="Tag RFID ilegible / ausente">Tag RFID ilegible / ausente</option>
+                  <option value="Excedente de mercancía">Excedente de mercancía</option>
+                  <option value="Error en Orden de Compra">Error en Orden de Compra</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Descripción y Observaciones</label>
+                <textarea 
+                  rows="3"
+                  placeholder="Detalle el estado del cargamento, número de precinto o novedad del transportador..."
+                  value={discDescription}
+                  onChange={(e) => setDiscDescription(e.target.value)}
+                  className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+                  required
+                ></textarea>
+              </div>
+
+              <div className="bg-cyan-500/10 border border-cyan-500/30 p-2.5 rounded-xl text-[10px] text-cyan-300 font-medium flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-cyan-400 mt-0.5" />
+                <span>Este reporte se enlazará automáticamente al módulo de Discrepancias & Historial para la auditoría gerencial.</span>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs py-3 rounded-xl uppercase tracking-wider transition-all shadow-lg">
+                  Registrar Discrepancia
+                </button>
+                <button type="button" onClick={() => setDiscModalOpen(false)} className="bg-slate-800 text-slate-300 font-bold text-xs px-5 py-3 rounded-xl hover:bg-slate-700">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div>
         <h2 className="text-2xl font-black text-white tracking-tight">Muelle de Carga & Despacho — Recepción de Camiones</h2>
         <p className="text-slate-400 text-xs mt-1 font-medium">Registro de ingresos de transporte, órdenes de compra y validación masiva de mercancía mediante antenas RFID fijas.</p>
@@ -125,22 +222,38 @@ export default function MuelleView({
                 <th className="py-3 px-4 text-center">Esperado (PO)</th>
                 <th className="py-3 px-4 text-center">Leído (RFID)</th>
                 <th className="py-3 px-4 text-center">Estado de Recepción</th>
+                <th className="py-3 px-4 text-center">Acción / Auditoría</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-slate-200">
-              {muelleItems.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
-                  <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{item.sku}</td>
-                  <td className="py-3.5 px-4 font-semibold text-white">{item.name}</td>
-                  <td className="py-3.5 px-4 text-center font-bold">{item.expected} un</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold text-emerald-400">{item.read} un</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${item.status === 'Completado' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
-                      {item.status === 'Completado' ? '✅ Completado' : '⏳ En Revisión'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {muelleItems.map((item) => {
+                const hasDiscrepancy = item.read < item.expected;
+                return (
+                  <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{item.sku}</td>
+                    <td className="py-3.5 px-4 font-semibold text-white">{item.name}</td>
+                    <td className="py-3.5 px-4 text-center font-bold">{item.expected} un</td>
+                    <td className="py-3.5 px-4 text-center font-mono font-bold text-emerald-400">{item.read} un</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${item.status === 'Completado' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+                        {item.status === 'Completado' ? '✅ Completado' : '⏳ En Revisión'}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      {hasDiscrepancy ? (
+                        <button 
+                          onClick={() => openDiscModal(item)}
+                          className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 rounded-xl text-[10px] font-bold transition-all flex items-center gap-1.5 mx-auto"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5" /> Reportar Discrepancia
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 font-medium">Sin novedad</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

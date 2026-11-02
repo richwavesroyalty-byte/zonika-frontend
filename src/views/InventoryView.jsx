@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Boxes, Plus, Search, Filter, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Boxes, Plus, Search, Filter, AlertTriangle, CheckCircle2, Trash2 } from 'lucide-react';
 
 export default function InventoryView({
   inventorySubTab,
@@ -7,14 +7,15 @@ export default function InventoryView({
   inventoryMadefront,
   inventoryBodega,
   setActiveTab,
-  showNotification
+  selectedCategory,
+  setSelectedCategory,
+  onDeleteProduct
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const currentList = inventorySubTab === 'madefront' ? inventoryMadefront : inventoryBodega;
 
-  // Filtrar por búsqueda y categoría
+  // Filtrar por búsqueda y categoría global sincronizada
   const filteredList = currentList.filter(item => {
     const matchesSearch = 
       item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -35,7 +36,7 @@ export default function InventoryView({
           <p className="text-slate-400 text-xs mt-1 font-medium">Gestión avanzada por ubicación física y lectura masiva de chips EPC RFID.</p>
         </div>
         <button 
-          onClick={() => setActiveTab('add-product')} 
+          onClick={setActiveTab} 
           className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all uppercase tracking-wider"
         >
           <Plus className="w-4 h-4" /> Registrar Nuevo Producto
@@ -73,7 +74,7 @@ export default function InventoryView({
               />
             </div>
 
-            {/* Selector de Categoría */}
+            {/* Selector de Categoría Sincronizado */}
             <div className="relative">
               <select 
                 value={selectedCategory}
@@ -104,6 +105,7 @@ export default function InventoryView({
                 <th className="py-3.5 px-4 text-center">Tags RFID Sincronizados</th>
                 <th className="py-3.5 px-4">Ubicación Física</th>
                 <th className="py-3.5 px-4 text-center">Estado</th>
+                <th className="py-3.5 px-4 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
@@ -119,16 +121,25 @@ export default function InventoryView({
                     <td className="py-3.5 px-4 text-center font-black text-white text-sm">{item.stock}</td>
                     <td className="py-3.5 px-4 text-center font-mono font-bold text-emerald-400">{item.rfidTagged || item.stock} un</td>
                     <td className="py-3.5 px-4 text-slate-300">{item.location}</td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold border ${item.status === 'Optimal' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold border ${item.status === 'Optimal' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
                         {item.status === 'Optimal' ? '🟢 Óptimo' : '⚠️ Stock Bajo'}
                       </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <button 
+                        onClick={() => onDeleteProduct(item, inventorySubTab)} 
+                        className="p-2 bg-rose-500/10 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 rounded-xl transition-all"
+                        title="Eliminar con trazabilidad"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-slate-400 text-xs font-medium">
+                  <td colSpan="8" className="py-8 text-center text-slate-400 text-xs font-medium">
                     No se encontraron productos que coincidan con la búsqueda.
                   </td>
                 </tr>

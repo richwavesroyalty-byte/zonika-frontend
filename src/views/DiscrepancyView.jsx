@@ -1,195 +1,135 @@
 import React, { useState } from 'react';
-import { AlertTriangle, CheckCircle2, Archive, Clock, FileText } from 'lucide-react';
+import { AlertTriangle, ClipboardList, ShieldAlert, Search } from 'lucide-react';
 
-const initialDiscrepancies = [
-  { id: '1', sku: 'ZNK-SKU-001', rfidTag: 'E28011606000002', erpStock: 15, physicalStock: 12, difference: -3, location: 'Bodega A - Pasillo 3' },
-  { id: '2', sku: 'ZNK-SKU-045', rfidTag: 'E28011606000045', erpStock: 8, physicalStock: 10, difference: 2, location: 'Bodega B - Estante 2' },
-  { id: '3', sku: 'ZNK-SKU-102', rfidTag: 'E28011606000102', erpStock: 25, physicalStock: 20, difference: -5, location: 'Bodega A - Pasillo 1' },
-];
+export default function DiscrepancyView({ discrepancies = [], deletedHistory = [] }) {
+  const [searchTerm, setSearchTerm] = useState('');
 
-const initialHistory = [
-  { 
-    id: '101', 
-    originalId: '3', 
-    sku: 'ZNK-SKU-089', 
-    rfidTag: 'E28011606000089', 
-    difference: -1, 
-    notes: 'Ajuste aprobado por gerencia de inventarios', 
-    deletedAt: '2026-10-26 16:45:10' 
-  }
-];
-
-export default function DiscrepancyView() {
-  const [activeTab, setActiveTab] = useState('active'); // 'active' o 'history'
-  const [discrepancies, setDiscrepancies] = useState(initialDiscrepancies);
-  const [history, setHistory] = useState(initialHistory);
-  const [auditNote, setAuditNote] = useState('');
-  const [selectedItemToArchive, setSelectedItemToArchive] = useState(null);
-
-  // Mover elemento de activo a historial de auditoría
-  const handleConfirmArchive = (e) => {
-    e.preventDefault();
-    if (!selectedItemToArchive) return;
-
-    const archivedRecord = {
-      id: Date.now().toString(),
-      originalId: selectedItemToArchive.id,
-      sku: selectedItemToArchive.sku,
-      rfidTag: selectedItemToArchive.rfidTag,
-      difference: selectedItemToArchive.difference,
-      notes: auditNote || 'Sin notas adicionales',
-      deletedAt: new Date().toLocaleString()
-    };
-
-    setHistory([archivedRecord, ...history]);
-    setDiscrepancies(discrepancies.filter(d => d.id !== selectedItemToArchive.id));
-    setSelectedItemToArchive(null);
-    setAuditNote('');
-  };
+  const filteredDeletions = deletedHistory.filter(d => 
+    d.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    d.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    d.user.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Cabecera de la Vista */}
-      <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-black text-white uppercase tracking-wider flex items-center gap-2">
-            <AlertTriangle className="w-6 h-6 text-amber-400" />
-            Gestión de Discrepancias & Historial RFID
-          </h2>
-          <p className="text-slate-400 text-xs mt-1">Control visual de diferencias entre inventario ERP y lectura física RFID.</p>
+    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+      <div>
+        <h2 className="text-2xl font-black text-white tracking-tight">Discrepancias & Historial de Bajas (Inalterable)</h2>
+        <p className="text-slate-400 text-xs mt-1 font-medium">Auditoría estricta de stock, discrepancias RFID y registro permanente de productos dados de baja con justificación.</p>
+      </div>
+
+      {/* Tabla de Discrepancias Activas */}
+      <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
+        <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Discrepancias Detectadas por RFID</h3>
+            <p className="text-[10px] text-slate-400">Diferencias entre el stock teórico en sistema y el conteo físico en antenas</p>
+          </div>
         </div>
-        
-        {/* Pestañas de Navegación */}
-        <div className="flex bg-[#0F172A] p-1 rounded-xl border border-slate-700">
-          <button 
-            onClick={() => setActiveTab('active')} 
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'active' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-300 hover:text-white'}`}
-          >
-            Discrepancias Activas ({discrepancies.length})
-          </button>
-          <button 
-            onClick={() => setActiveTab('history')} 
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'history' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-300 hover:text-white'}`}
-          >
-            Historial de Auditoría ({history.length})
-          </button>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-900/40">
+                <th className="py-3 px-4">ID Discrepancia</th>
+                <th className="py-3 px-4">SKU / Ítem</th>
+                <th className="py-3 px-4 text-center">Esperado</th>
+                <th className="py-3 px-4 text-center">Conteo RFID</th>
+                <th className="py-3 px-4 text-center">Diferencia</th>
+                <th className="py-3 px-4">Ubicación</th>
+                <th className="py-3 px-4">Causa Estimada</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800 text-slate-200">
+              {discrepancies.length > 0 ? (
+                discrepancies.map((d, i) => (
+                  <tr key={i} className="hover:bg-slate-800/55 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-amber-400">{d.id}</td>
+                    <td className="py-3.5 px-4 font-semibold text-white">{d.item} <span className="text-[10px] text-slate-400 font-mono">({d.sku})</span></td>
+                    <td className="py-3.5 px-4 text-center font-bold">{d.expected} un</td>
+                    <td className="py-3.5 px-4 text-center font-mono font-bold text-cyan-400">{d.rfidCount} un</td>
+                    <td className="py-3.5 px-4 text-center font-black text-rose-400">{d.diff} un</td>
+                    <td className="py-3.5 px-4 text-slate-300">{d.location}</td>
+                    <td className="py-3.5 px-4 text-slate-300 font-medium">{d.cause}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="py-6 text-center text-slate-400 text-xs">No hay discrepancias activas reportadas.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Contenido de la Tabla */}
-      <div className="bg-[#1E293B] border border-slate-700/60 rounded-2xl shadow-xl overflow-hidden">
-        {activeTab === 'active' ? (
-          <div className="p-6">
-            <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">Discrepancias Activas (ERP vs RFID)</h3>
-            {discrepancies.length === 0 ? (
-              <p className="text-center text-slate-400 py-12 text-xs font-semibold">¡Excelente! No hay discrepancias activas registradas 🎉</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-700 text-slate-400 text-[10px] uppercase tracking-wider">
-                      <th className="pb-3 px-4">SKU / RFID Tag</th>
-                      <th className="pb-3 px-4">Ubicación</th>
-                      <th className="pb-3 px-4">ERP / Físico</th>
-                      <th className="pb-3 px-4">Diferencia</th>
-                      <th className="pb-3 px-4 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
-                    {discrepancies.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
-                        <td className="py-3 px-4">
-                          <span className="font-bold text-white block">{item.sku}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">{item.rfidTag}</span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-300">{item.location}</td>
-                        <td className="py-3 px-4 font-mono font-semibold">{item.erpStock} / {item.physicalStock}</td>
-                        <td className="py-3 px-4">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black ${item.difference < 0 ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
-                            {item.difference}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <button 
-                            onClick={() => setSelectedItemToArchive(item)}
-                            className="bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-slate-950 px-3 py-1.5 rounded-xl font-bold text-[10px] transition-all border border-red-500/30"
-                          >
-                            Archivar / Resolver
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+      {/* Historial Permanente e Inalterable de Productos Eliminados */}
+      <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700/80 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider">Historial Inalterable de Productos Eliminados (Bajas)</h3>
+              <p className="text-[10px] text-slate-400">Registro permanente de auditoría con motivo, justificación, responsable y estampa temporal (No eliminable)</p>
+            </div>
           </div>
-        ) : (
-          <div className="p-6">
-            <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">Historial de Auditoría (Registros Archivados)</h3>
-            {history.length === 0 ? (
-              <p className="text-center text-slate-400 py-12 text-xs font-semibold">El historial de auditoría está vacío.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-700 text-slate-400 text-[10px] uppercase tracking-wider">
-                      <th className="pb-3 px-4">SKU / RFID Tag</th>
-                      <th className="pb-3 px-4">Diferencia</th>
-                      <th className="pb-3 px-4">Notas de Auditoría</th>
-                      <th className="pb-3 px-4 text-right">Fecha de Archivo</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
-                    {history.map((record) => (
-                      <tr key={record.id} className="hover:bg-slate-800/50 transition-colors">
-                        <td className="py-3 px-4">
-                          <span className="font-bold text-white block">{record.sku}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">{record.rfidTag}</span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black bg-red-500/10 text-red-400 border border-red-500/20">
-                            {record.difference}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-300">{record.notes}</td>
-                        <td className="py-3 px-4 text-right text-slate-400 font-mono text-[10px]">{record.deletedAt}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      {/* Sub-modal para capturar notas de auditoría al archivar */}
-      {selectedItemToArchive && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-md bg-[#0F172A] border border-slate-700 rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-black text-white uppercase tracking-wider">Archivar Discrepancia</h3>
-            <p className="text-xs text-slate-300">SKU: <strong className="text-white font-mono">{selectedItemToArchive.sku}</strong></p>
-            <form onSubmit={handleConfirmArchive} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Notas de auditoría o motivo de resolución:</label>
-                <textarea 
-                  value={auditNote} 
-                  onChange={(e) => setAuditNote(e.target.value)}
-                  placeholder="Ej. Conteo físico verificado por supervisor..."
-                  rows={3}
-                  className="w-full bg-[#1E293B] border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-500"
-                  required
-                />
-              </div>
-              <div className="flex gap-3">
-                <button type="submit" className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs py-3 rounded-xl uppercase tracking-wider transition-all">Confirmar y Archivar</button>
-                <button type="button" onClick={() => setSelectedItemToArchive(null)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-5 py-3 rounded-xl transition-all">Cancelar</button>
-              </div>
-            </form>
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Buscar en historial de bajas..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#0F172A] border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+            />
           </div>
         </div>
-      )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-900/40">
+                <th className="py-3 px-4">ID Registro</th>
+                <th className="py-3 px-4">SKU / Producto</th>
+                <th className="py-3 px-4">Motivo de Baja</th>
+                <th className="py-3 px-4">Descripción / Justificación</th>
+                <th className="py-3 px-4">Ubicación</th>
+                <th className="py-3 px-4">Responsable</th>
+                <th className="py-3 px-4">Fecha y Hora</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800 text-slate-200">
+              {filteredDeletions.length > 0 ? (
+                filteredDeletions.map((del) => (
+                  <tr key={del.id} className="hover:bg-slate-800/55 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-rose-400">{del.id}</td>
+                    <td className="py-3.5 px-4 font-semibold text-white">
+                      {del.name} <span className="text-[10px] text-cyan-400 font-mono block">SKU: {del.sku}</span>
+                    </td>
+                    <td className="py-3.5 px-4 font-bold text-amber-300">{del.reason}</td>
+                    <td className="py-3.5 px-4 text-slate-300 max-w-xs truncate" title={del.description}>{del.description}</td>
+                    <td className="py-3.5 px-4 text-slate-400">{del.location}</td>
+                    <td className="py-3.5 px-4 font-medium text-slate-200">{del.user}</td>
+                    <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{del.timestamp}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="py-8 text-center text-slate-400 text-xs font-medium">
+                    No se encontraron registros de bajas con los filtros actuales.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
