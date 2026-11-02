@@ -899,7 +899,7 @@ export default function ZonikaApp() {
             />
           )}
 
-          {activeTab === 'histolar_muelle' && (
+          {activeTab === 'historial_muelle' && (
             <MuelleHistorialView 
               muelleHistorial={muelleHistorial}
               setMuelleHistorial={setMuelleHistorial}
