@@ -398,7 +398,7 @@ export default function ZonikaApp() {
 
   if (!currentUser) {
     return (
-      <div className="flex h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans items-center justify-center p-4">
+      <div className="flex min-h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans items-center justify-center p-4">
         <div className="w-full max-w-md bg-[#0F172A] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-3">
             <div className="w-20 h-20 bg-[#1E293B] border border-slate-700 rounded-2xl flex items-center justify-center p-3 mx-auto shadow-inner">
@@ -429,7 +429,7 @@ export default function ZonikaApp() {
   }
 
   return (
-    <div className="flex h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans overflow-hidden relative">
+    <div className="flex min-h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans relative">
       {notification && (
         <div className="fixed top-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-cyan-300 animate-bounce">
           <CheckCircle2 className="w-5 h-5" />
@@ -674,12 +674,12 @@ export default function ZonikaApp() {
         ></div>
       )}
 
-      {/* Sidebar Responsive (Drawer móvil con offset seguro superior para evitar el notch de iPhone) */}
+      {/* Sidebar Responsive (Drawer móvil con offset superior seguro y pointer-events condicional para evitar bloqueo de clics) */}
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50 w-64 bg-[#0F172A] border-r border-slate-800 
         flex flex-col justify-between p-4 shrink-0 transition-transform duration-300 ease-in-out
         pt-16 md:pt-4
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        ${mobileMenuOpen ? 'translate-x-0 pointer-events-auto shadow-2xl' : '-translate-x-full pointer-events-none md:pointer-events-auto md:translate-x-0'}
       `}>
         <div>
           <div className="flex items-center justify-between px-2 py-4 mb-5 border-b border-slate-800">
@@ -692,6 +692,7 @@ export default function ZonikaApp() {
             </div>
             {/* Botón para cerrar menú en móviles */}
             <button 
+              type="button"
               onClick={() => setMobileMenuOpen(false)} 
               className="md:hidden text-slate-400 hover:text-white p-2"
             >
@@ -779,7 +780,7 @@ export default function ZonikaApp() {
         </button>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120] h-[100dvh] overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120] min-h-[100dvh]">
         <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-4 sm:px-8 shrink-0 z-20">
           <div className="flex items-center gap-3">
             {/* Botón de Menú Hamburguesa para móviles y iPhone */}
@@ -808,7 +809,7 @@ export default function ZonikaApp() {
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+        <div className="flex-1 p-4 sm:p-8">
           {activeTab === 'dashboard' && (
             <DashboardView 
               totalStockMadefront={totalStockMadefront}
@@ -898,7 +899,7 @@ export default function ZonikaApp() {
             />
           )}
 
-          {activeTab === 'historial_muelle' && (
+          {activeTab === 'histolar_muelle' && (
             <MuelleHistorialView 
               muelleHistorial={muelleHistorial}
               setMuelleHistorial={setMuelleHistorial}
