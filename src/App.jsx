@@ -5,7 +5,7 @@ import {
   Printer, BarChart3, Settings, ShieldAlert, Building2,
   Trash2, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin,
   Lock, Mail, LogOut, Shield, TrendingUp, TrendingDown, Sparkles, Download, FileText,
-  Calendar, Clock, UserCheck, AlertOctagon, Filter, X, Eye, RefreshCw, ArrowRightLeft, Tag, Menu
+  Calendar, Clock, UserCheck, AlertOctagon, Filter, X, Eye, RefreshCw, Tag, Menu
 } from 'lucide-react';
 import logoIsotipo from './assets/Logo Isotipo.png';
 
@@ -42,7 +42,7 @@ export default function ZonikaApp() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [notification, setNotification] = useState(null);
 
-  // Estado para controlar el menú lateral en dispositivos móviles / Chainway C72
+  // Estado para controlar el menú lateral en dispositivos móviles / iPhone / Chainway
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Estados para Modales Avanzados de Inventario
@@ -398,7 +398,7 @@ export default function ZonikaApp() {
 
   if (!currentUser) {
     return (
-      <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans items-center justify-center p-4">
+      <div className="flex h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans items-center justify-center p-4">
         <div className="w-full max-w-md bg-[#0F172A] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-3">
             <div className="w-20 h-20 bg-[#1E293B] border border-slate-700 rounded-2xl flex items-center justify-center p-3 mx-auto shadow-inner">
@@ -429,7 +429,7 @@ export default function ZonikaApp() {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans overflow-hidden relative">
+    <div className="flex h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans overflow-hidden relative">
       {notification && (
         <div className="fixed top-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-cyan-300 animate-bounce">
           <CheckCircle2 className="w-5 h-5" />
@@ -669,15 +669,16 @@ export default function ZonikaApp() {
       {/* Fondo oscuro para móvil cuando el menú está abierto */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-xs md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         ></div>
       )}
 
-      {/* Sidebar Responsive (Drawer en móvil y fijo en Desktop) */}
+      {/* Sidebar Responsive (Drawer móvil con offset seguro superior para evitar el notch de iPhone) */}
       <aside className={`
-        fixed md:static inset-y-0 left-0 z-45 w-64 bg-[#0F172A] border-r border-slate-800 
+        fixed md:static inset-y-0 left-0 z-50 w-64 bg-[#0F172A] border-r border-slate-800 
         flex flex-col justify-between p-4 shrink-0 transition-transform duration-300 ease-in-out
+        pt-16 md:pt-4
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div>
@@ -692,7 +693,7 @@ export default function ZonikaApp() {
             {/* Botón para cerrar menú en móviles */}
             <button 
               onClick={() => setMobileMenuOpen(false)} 
-              className="md:hidden text-slate-400 hover:text-white p-1"
+              className="md:hidden text-slate-400 hover:text-white p-2"
             >
               <X className="w-5 h-5" />
             </button>
@@ -700,57 +701,90 @@ export default function ZonikaApp() {
 
           <nav className="space-y-1">
             {hasAccess('dashboard') && (
-              <button onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button 
+                type="button"
+                onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
                 <Activity className="w-4 h-4" /> Panel General
               </button>
             )}
             {hasAccess('inventory') && (
-              <button onClick={() => { setActiveTab('inventory'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button 
+                type="button"
+                onClick={() => { setActiveTab('inventory'); setMobileMenuOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
                 <Boxes className="w-4 h-4" /> Stock e Inventarios
               </button>
             )}
             {hasAccess('muelle') && (
-              <button onClick={() => { setActiveTab('muelle'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button 
+                type="button"
+                onClick={() => { setActiveTab('muelle'); setMobileMenuOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
                 <Truck className="w-4 h-4" /> Recepción en Muelle
               </button>
             )}
             {hasAccess('historial_muelle') && (
-              <button onClick={() => { setActiveTab('historial_muelle'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button 
+                type="button"
+                onClick={() => { setActiveTab('historial_muelle'); setMobileMenuOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
                 <ClipboardList className="w-4 h-4" /> Historial de Muelle
               </button>
             )}
             {hasAccess('movements') && (
-              <button onClick={() => { setActiveTab('movements'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button 
+                type="button"
+                onClick={() => { setActiveTab('movements'); setMobileMenuOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
                 <ArrowLeftRight className="w-4 h-4" /> Entradas y Salidas
               </button>
             )}
             {hasAccess('encoder') && (
-              <button onClick={() => { setActiveTab('encoder'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button 
+                type="button"
+                onClick={() => { setActiveTab('encoder'); setMobileMenuOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
                 <Printer className="w-4 h-4" /> Grabación / Impresión Tag
               </button>
             )}
             {(hasAccess('discrepancies') || currentUser.roleKey === 'admin') && (
-              <button onClick={() => { setActiveTab('discrepancies'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'discrepancies' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button 
+                type="button"
+                onClick={() => { setActiveTab('discrepancies'); setMobileMenuOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'discrepancies' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
                 <AlertTriangle className="w-4 h-4" /> Discrepancias & Historial
               </button>
             )}
             {hasAccess('reports') && (
-              <button onClick={() => { setActiveTab('reports'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button 
+                type="button"
+                onClick={() => { setActiveTab('reports'); setMobileMenuOpen(false); }} 
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
                 <BarChart3 className="w-4 h-4" /> Reportes & Analítica
               </button>
             )}
           </nav>
         </div>
-        <button onClick={handleLogout} className="text-red-400 text-xs font-bold flex items-center gap-2 p-2 hover:bg-slate-800 rounded-xl transition-colors">
+        <button type="button" onClick={handleLogout} className="text-red-400 text-xs font-bold flex items-center gap-2 p-2 hover:bg-slate-800 rounded-xl transition-colors">
           <LogOut className="w-4 h-4" /> Cerrar Sesión
         </button>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120]">
-        <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-20">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120] h-[100dvh] overflow-hidden">
+        <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-4 sm:px-8 shrink-0 z-20">
           <div className="flex items-center gap-3">
-            {/* Botón de Menú Hamburguesa para móviles y Chainway C72 */}
+            {/* Botón de Menú Hamburguesa para móviles y iPhone */}
             <button 
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded-xl transition-all"
               title="Abrir Menú"
@@ -763,7 +797,11 @@ export default function ZonikaApp() {
             </span>
           </div>
 
-          <button onClick={() => { setIsReading(!isReading); showNotification(!isReading ? '📡 Escaneo RFID activo...' : '⏹️ Escaneo detenido.'); }} className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all shadow-lg ${isReading ? 'bg-amber-500 text-slate-950 animate-pulse' : 'bg-emerald-500 text-slate-950'}`}>
+          <button 
+            type="button"
+            onClick={() => { setIsReading(!isReading); showNotification(!isReading ? '📡 Escaneo RFID activo...' : '⏹️ Escaneo detenido.'); }} 
+            className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all shadow-lg ${isReading ? 'bg-amber-500 text-slate-950 animate-pulse' : 'bg-emerald-500 text-slate-950'}`}
+          >
             {isReading ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
             <span className="hidden xs:inline">{isReading ? 'DETENER ESCANEO' : 'INICIAR CONTEO RFID'}</span>
             <span className="xs:hidden">{isReading ? 'DETENER' : 'ESCANEAR'}</span>
