@@ -29,12 +29,37 @@ export default function ReportsView({ showNotification }) {
     { sku: 'INV-002', name: 'Cámara IP Domo 4K', currentStock: 12, dailyConsumption: 3, daysLeft: 4, risk: 'CRÍTICO' },
   ];
 
+  // Función Real y Funcional para Exportar a Excel (.CSV)
   const handleExportExcel = () => {
-    if (showNotification) showNotification('📊 Reporte exportado a Excel con éxito.');
+    const csvData = [
+      ["ID Recepcion", "Placa Camion", "Proveedor", "Hora de Llegada", "Escaneo de Cierre", "Lead Time", "Estado"],
+      ["REC-892", "SGT-881", "Ferretería Mayorista SAS", "09:00 a.m.", "09:15 a.m.", "15 Minutos", "Rápido"]
+    ];
+
+    let csvContent = "data:text/csv;charset=utf-8," 
+      + csvData.map(e => e.join(",")).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Reporte_Gerencial_Zonika_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    if (showNotification) {
+      showNotification('📊 ¡Reporte Excel (.csv) exportado con éxito!');
+    }
   };
 
+  // Función Real y Funcional para Exportar a PDF (Impresión nativa optimizada)
   const handleExportPDF = () => {
-    if (showNotification) showNotification('📄 Informe gerencial generado en PDF.');
+    if (showNotification) {
+      showNotification('📄 Generando documento PDF corporativo...');
+    }
+    setTimeout(() => {
+      window.print();
+    }, 500);
   };
 
   return (
@@ -182,7 +207,7 @@ export default function ReportsView({ showNotification }) {
                   </div>
                   <div>
                     <span className="text-white font-semibold block group-hover:text-cyan-400">{op.name}</span>
-                    <span className="text-[10px] text-slate-400">{op.role} • {op.tasksCompleted} tareas</span>
+                    <span className="text-[10px] text-slate-400">{op.role} — {op.tasksCompleted} tareas</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -208,7 +233,7 @@ export default function ReportsView({ showNotification }) {
             {stockoutForecast.map((s, idx) => (
               <div key={idx} className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs space-y-1">
                 <div className="flex justify-between font-bold">
-                  <span className="text-cyan-400">{s.sku} - {s.name}</span>
+                  <span className="text-cyan-400">{s.sku} — {s.name}</span>
                   <span className="text-amber-400">{s.daysLeft} días restantes</span>
                 </div>
                 <p className="text-[10px] text-slate-400">Stock actual: {s.currentStock} un | Consumo diario: {s.dailyConsumption} un</p>

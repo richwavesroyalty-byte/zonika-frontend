@@ -5,7 +5,7 @@ import {
   Printer, BarChart3, Settings, ShieldAlert, Building2,
   Trash2, Truck, PackageCheck, Zap, ClipboardList, Warehouse, Store, MapPin,
   Lock, Mail, LogOut, Shield, TrendingUp, TrendingDown, Sparkles, Download, FileText,
-  Calendar, Clock, UserCheck, AlertOctagon, Filter, X, Eye, RefreshCw
+  Calendar, Clock, UserCheck, AlertOctagon, Filter, X, Eye, RefreshCw, ArrowRightLeft, Tag, Menu
 } from 'lucide-react';
 import logoIsotipo from './assets/Logo Isotipo.png';
 
@@ -42,11 +42,27 @@ export default function ZonikaApp() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [notification, setNotification] = useState(null);
 
-  // Estado para Modal de Eliminación con Trazabilidad
+  // Estado para controlar el menú lateral en dispositivos móviles / Chainway C72
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Estados para Modales Avanzados de Inventario
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deleteReason, setDeleteReason] = useState('Daño físico / Mermas');
   const [deleteDescription, setDeleteDescription] = useState('');
+
+  // Modal de Transferencia entre Almacenes
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [itemToTransfer, setItemToTransfer] = useState(null);
+
+  // Modal de Trazabilidad 360° por Producto
+  const [traceModalOpen, setTraceModalOpen] = useState(false);
+  const [itemToTrace, setItemToTrace] = useState(null);
+
+  // Modal de Re-codificación RFID (Re-encoding)
+  const [recodeModalOpen, setRecodeModalOpen] = useState(false);
+  const [itemToRecode, setItemToRecode] = useState(null);
+  const [newEpcValue, setNewEpcValue] = useState('');
 
   const [liveActivityFlow, setLiveActivityFlow] = useState([15, 28, 42, 35, 60, 50, 75]);
 
@@ -65,12 +81,12 @@ export default function ZonikaApp() {
 
   const [inventoryMadefront, setInventoryMadefront] = useState(() => {
     const saved = localStorage.getItem('zonika_inv_madefront');
-    return saved ? JSON.parse(saved) : initialInventoryMadefront;
+    return saved ? JSON.parse(saved) : initialInventoryMadefront.map(item => ({ ...item, minStock: 5 }));
   });
 
   const [inventoryBodega, setInventoryBodega] = useState(() => {
     const saved = localStorage.getItem('zonika_inv_bodega');
-    return saved ? JSON.parse(saved) : initialInventoryBodega;
+    return saved ? JSON.parse(saved) : initialInventoryBodega.map(item => ({ ...item, minStock: 10 }));
   });
 
   const [movements, setMovements] = useState(() => {
@@ -83,7 +99,6 @@ export default function ZonikaApp() {
     return saved ? JSON.parse(saved) : initialMuelleHistorial;
   });
 
-  // Historial de eliminados inalterable
   const [deletedHistory, setDeletedHistory] = useState(() => {
     const saved = localStorage.getItem('zonika_deleted_history');
     return saved ? JSON.parse(saved) : [
@@ -101,7 +116,6 @@ export default function ZonikaApp() {
     ];
   });
 
-  // Discrepancias (incluyendo muelle y auditoría)
   const [discrepancies, setDiscrepancies] = useState(() => {
     const saved = localStorage.getItem('zonika_discrepancies');
     return saved ? JSON.parse(saved) : [
@@ -110,7 +124,7 @@ export default function ZonikaApp() {
   });
 
   const [muelleForm, setMuelleForm] = useState({ ordenCompra: '', placaCamion: '', transportadora: '', proveedor: '' });
-  const [newProduct, setNewProduct] = useState({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
+  const [newProduct, setNewProduct] = useState({ id: '', name: '', category: 'Herramientas', stock: '', location: '', minStock: 5 });
   const [newMovement, setNewMovement] = useState({ 
     type: 'ENTRADA', 
     item: '', 
@@ -121,8 +135,9 @@ export default function ZonikaApp() {
 
   const handleGoToAddProduct = () => {
     const defaultCat = selectedCategory !== 'all' ? selectedCategory : 'Herramientas';
-    setNewProduct({ id: '', name: '', category: defaultCat, stock: '', location: '' });
+    setNewProduct({ id: '', name: '', category: defaultCat, stock: '', location: '', minStock: 5 });
     setActiveTab('add-product');
+    setMobileMenuOpen(false);
   };
 
   useEffect(() => {
@@ -217,7 +232,7 @@ export default function ZonikaApp() {
       ...newProduct,
       epc: 'E28068940000' + Math.floor(10000000 + Math.random() * 90000000),
       rfidTagged: parseInt(newProduct.stock),
-      status: 'Optimal',
+      minStock: parseInt(newProduct.minStock) || 5,
       location: inventorySubTab === 'madefront' ? 'Madefront Ferretería' : 'Bodega Principal'
     };
     if (inventorySubTab === 'madefront') {
@@ -225,9 +240,69 @@ export default function ZonikaApp() {
     } else {
       setInventoryBodega([item, ...inventoryBodega]);
     }
-    setNewProduct({ id: '', name: '', category: 'Herramientas', stock: '', location: '' });
+    setNewProduct({ id: '', name: '', category: 'Herramientas', stock: '', location: '', minStock: 5 });
     setActiveTab('inventory');
     showNotification('¡Producto registrado con éxito en su categoría!');
+  };
+
+  const initiateTransfer = (item, currentWarehouse) => {
+    setItemToTransfer({ item, currentWarehouse });
+    setTransferModalOpen(true);
+  };
+
+  const confirmTransfer = (targetWarehouse) => {
+    if (!itemToTransfer) return;
+    const { item, currentWarehouse } = itemToTransfer;
+
+    if (currentWarehouse === 'madefront' && targetWarehouse === 'bodega') {
+      setInventoryMadefront(prev => prev.filter(p => p.id !== item.id));
+      setInventoryBodega(prev => [{ ...item, location: 'Bodega Principal' }, ...prev]);
+    } else if (currentWarehouse === 'bodega' && targetWarehouse === 'madefront') {
+      setInventoryBodega(prev => prev.filter(p => p.id !== item.id));
+      setInventoryMadefront(prev => [{ ...item, location: 'Madefront Ferretería' }, ...prev]);
+    }
+
+    const mov = {
+      id: 'MOV-' + Math.floor(100 + Math.random() * 900),
+      type: 'TRANSFERENCIA',
+      item: item.name,
+      qty: parseInt(item.stock),
+      reason: 'Transferencia Inter-Almacén',
+      description: `Traslado de ${currentWarehouse === 'madefront' ? 'Madefront Ferretería' : 'Bodega Principal'} a ${targetWarehouse === 'madefront' ? 'Madefront Ferretería' : 'Bodega Principal'}`,
+      user: currentUser ? currentUser.name : 'Sistema',
+      time: new Date().toLocaleString()
+    };
+    setMovements(prev => [mov, ...prev]);
+
+    setTransferModalOpen(false);
+    setItemToTransfer(null);
+    showNotification('🔄 ¡Transferencia entre almacenes completada con éxito!');
+  };
+
+  const openTraceability = (item) => {
+    setItemToTrace(item);
+    setTraceModalOpen(true);
+  };
+
+  const openRecodeModal = (item) => {
+    setItemToRecode(item);
+    setNewEpcValue(item.epc || '');
+    setRecodeModalOpen(true);
+  };
+
+  const confirmRecode = (e) => {
+    e.preventDefault();
+    if (!itemToRecode || !newEpcValue) return;
+
+    const updateList = (list) => list.map(p => p.id === itemToRecode.id ? { ...p, epc: newEpcValue } : p);
+
+    setInventoryMadefront(updateList);
+    setInventoryBodega(updateList);
+
+    setRecodeModalOpen(false);
+    setItemToRecode(null);
+    setNewEpcValue('');
+    showNotification('🏷️ ¡Tag RFID (EPC) re-codificado correctamente!');
   };
 
   const initiateDeleteProduct = (item, warehouseType) => {
@@ -324,7 +399,7 @@ export default function ZonikaApp() {
   if (!currentUser) {
     return (
       <div className="flex h-screen w-screen bg-[#0B1120] text-slate-100 font-sans items-center justify-center p-4">
-        <div className="w-full max-w-md bg-[#0F172A] border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+        <div className="w-full max-w-md bg-[#0F172A] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-3">
             <div className="w-20 h-20 bg-[#1E293B] border border-slate-700 rounded-2xl flex items-center justify-center p-3 mx-auto shadow-inner">
               <img src={logoIsotipo} alt="Zonika" className="w-full h-full object-contain" />
@@ -365,7 +440,7 @@ export default function ZonikaApp() {
       {/* Modal de Trazabilidad y Eliminación Inalterable */}
       {deleteModalOpen && itemToDelete && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scaleIn">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-700 pb-3">
               <div className="flex items-center gap-2 text-rose-400">
                 <ShieldAlert className="w-5 h-5" />
@@ -402,7 +477,7 @@ export default function ZonikaApp() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Descripción Detallada (Justificación obligatoria)</label>
                 <textarea 
                   rows="3"
-                  placeholder="Explique el porqué y para qué se retira este registro del inventario activo..."
+                  placeholder="Explique el porqué y para qué se retira este registro..."
                   value={deleteDescription}
                   onChange={(e) => setDeleteDescription(e.target.value)}
                   className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs text-white focus:outline-none focus:border-rose-500"
@@ -410,16 +485,11 @@ export default function ZonikaApp() {
                 ></textarea>
               </div>
 
-              <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl text-[10px] text-amber-300 font-medium flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
-                <span>Aviso: Este registro quedará guardado permanentemente en el Historial Inalterable de Discrepancias y no podrá ser borrado por ningún usuario.</span>
-              </div>
-
               <div className="flex gap-2 pt-2">
                 <button type="submit" className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs py-3 rounded-xl uppercase tracking-wider transition-all shadow-lg">
                   Confirmar Baja Definitiva
                 </button>
-                <button type="button" onClick={() => setDeleteModalOpen(false)} className="bg-slate-800 text-slate-300 font-bold text-xs px-5 py-3 rounded-xl hover:bg-slate-700">
+                <button type="button" onClick={() => setDeleteModalOpen(false)} className="bg-slate-800 text-slate-300 font-bold text-xs px-5 py-3 rounded-xl">
                   Cancelar
                 </button>
               </div>
@@ -428,54 +498,244 @@ export default function ZonikaApp() {
         </div>
       )}
 
-      {/* Sidebar con Permisos RBAC Integrados */}
-      <aside className="w-64 bg-[#0F172A] border-r border-slate-800 flex flex-col justify-between p-4 z-10 shrink-0">
-        <div>
-          <div className="flex items-center gap-3 px-2 py-4 mb-5 border-b border-slate-800">
-            <img src={logoIsotipo} alt="Zonika" className="w-10 h-10 object-contain" />
-            <div>
-              <h1 className="font-black text-lg text-white tracking-wider">ZONIKA</h1>
-              <span className="text-[10px] text-cyan-400 font-semibold">{currentUser.name}</span>
+      {/* Modal de Transferencia Rápida entre Almacenes */}
+      {transferModalOpen && itemToTransfer && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+              <div className="flex items-center gap-2 text-cyan-400">
+                <ArrowRightLeft className="w-5 h-5" />
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">Transferencia Inter-Almacén</h3>
+              </div>
+              <button onClick={() => setTransferModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+              <p className="text-slate-400">Artículo seleccionado:</p>
+              <p className="font-bold text-white text-sm">{itemToTransfer.item.name} <span className="text-cyan-400 font-mono">({itemToTransfer.item.id})</span></p>
+              <p className="text-[10px] text-slate-400">Ubicación actual: <strong className="text-amber-300">{itemToTransfer.currentWarehouse === 'madefront' ? 'Madefront Ferretería' : 'Bodega Principal'}</strong></p>
+              <p className="text-[10px] text-slate-400">Stock disponible: <strong className="text-white">{itemToTransfer.item.stock} un</strong></p>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-slate-300 font-bold">Seleccione el almacén de destino:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {itemToTransfer.currentWarehouse === 'madefront' ? (
+                  <button 
+                    onClick={() => confirmTransfer('bodega')}
+                    className="p-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl text-center transition-all shadow-md uppercase"
+                  >
+                    🏭 Enviar a Bodega Principal
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => confirmTransfer('madefront')}
+                    className="p-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl text-center transition-all shadow-md uppercase"
+                  >
+                    🏪 Enviar a Madefront Ferretería
+                  </button>
+                )}
+                <button 
+                  onClick={() => setTransferModalOpen(false)}
+                  className="p-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl text-center transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal de Trazabilidad 360° por Producto */}
+      {traceModalOpen && itemToTrace && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+              <div className="flex items-center gap-2 text-cyan-400">
+                <Shield className="w-5 h-5" />
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">Trazabilidad 360° — Línea de Tiempo SKU</h3>
+              </div>
+              <button onClick={() => setTraceModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-[#0F172A] border border-slate-800 p-4 rounded-2xl text-xs space-y-2">
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">SKU:</span>
+                <span className="font-mono font-bold text-cyan-400">{itemToTrace.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Producto:</span>
+                <span className="font-semibold text-white">{itemToTrace.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Código EPC RFID:</span>
+                <span className="font-mono text-emerald-400 text-[11px]">{itemToTrace.epc}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Categoría:</span>
+                <span className="text-cyan-300">{itemToTrace.category}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold">Ubicación Física:</span>
+                <span className="text-slate-200">{itemToTrace.location}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Historial de Custodia (Log de Eventos)</h4>
+              <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-3 text-xs space-y-3 max-h-44 overflow-y-auto">
+                <div className="flex items-start gap-3 border-b border-slate-800 pb-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1"></div>
+                  <div>
+                    <p className="font-bold text-white">Ingreso por Muelle (PO-44102)</p>
+                    <p className="text-[10px] text-slate-400">Validado mediante antena Zebra FX9600 — Operador: Juan Pérez</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 border-b border-slate-800 pb-2">
+                  <div className="w-2 h-2 rounded-full bg-cyan-400 mt-1"></div>
+                  <div>
+                    <p className="font-bold text-white">Sincronización de Stock</p>
+                    <p className="text-[10px] text-slate-400">Stock activo inicial: {itemToTrace.stock} un | Estado: Óptimo</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-amber-400 mt-1"></div>
+                  <div>
+                    <p className="font-bold text-white">Último Conteo RFID Masivo</p>
+                    <p className="text-[10px] text-slate-400">Verificado sin discrepancias en zona activa.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button onClick={() => setTraceModalOpen(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-6 py-2.5 rounded-xl transition-all">
+                Cerrar Trazabilidad
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Re-codificación RFID (Re-encoding) */}
+      {recodeModalOpen && itemToRecode && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
+              <div className="flex items-center gap-2 text-cyan-400">
+                <Tag className="w-5 h-5" />
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">Re-codificación de Tag RFID (Re-encoding)</h3>
+              </div>
+              <button onClick={() => setRecodeModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+              <p className="text-slate-400">Producto seleccionado:</p>
+              <p className="font-bold text-white text-sm">{itemToRecode.name} <span className="text-cyan-400 font-mono">({itemToRecode.id})</span></p>
+            </div>
+
+            <form onSubmit={confirmRecode} className="space-y-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Nuevo Código EPC RFID</label>
+                <input 
+                  type="text" 
+                  value={newEpcValue}
+                  onChange={(e) => setNewEpcValue(e.target.value)}
+                  className="w-full bg-[#0F172A] border border-slate-700 p-3 rounded-xl text-xs font-mono font-bold text-cyan-400 focus:outline-none focus:border-cyan-500"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs py-3 rounded-xl uppercase tracking-wider transition-all shadow-lg">
+                  Actualizar Tag EPC
+                </button>
+                <button type="button" onClick={() => setRecodeModalOpen(false)} className="bg-slate-800 text-slate-300 font-bold text-xs px-5 py-3 rounded-xl">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Fondo oscuro para móvil cuando el menú está abierto */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        ></div>
+      )}
+
+      {/* Sidebar Responsive (Drawer en móvil y fijo en Desktop) */}
+      <aside className={`
+        fixed md:static inset-y-0 left-0 z-45 w-64 bg-[#0F172A] border-r border-slate-800 
+        flex flex-col justify-between p-4 shrink-0 transition-transform duration-300 ease-in-out
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div>
+          <div className="flex items-center justify-between px-2 py-4 mb-5 border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <img src={logoIsotipo} alt="Zonika" className="w-10 h-10 object-contain" />
+              <div>
+                <h1 className="font-black text-lg text-white tracking-wider">ZONIKA</h1>
+                <span className="text-[10px] text-cyan-400 font-semibold">{currentUser.name}</span>
+              </div>
+            </div>
+            {/* Botón para cerrar menú en móviles */}
+            <button 
+              onClick={() => setMobileMenuOpen(false)} 
+              className="md:hidden text-slate-400 hover:text-white p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
           <nav className="space-y-1">
             {hasAccess('dashboard') && (
-              <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'dashboard' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <Activity className="w-4 h-4" /> Panel General
               </button>
             )}
             {hasAccess('inventory') && (
-              <button onClick={() => setActiveTab('inventory')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button onClick={() => { setActiveTab('inventory'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'inventory' || activeTab === 'add-product' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <Boxes className="w-4 h-4" /> Stock e Inventarios
               </button>
             )}
             {hasAccess('muelle') && (
-              <button onClick={() => setActiveTab('muelle')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button onClick={() => { setActiveTab('muelle'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <Truck className="w-4 h-4" /> Recepción en Muelle
               </button>
             )}
             {hasAccess('historial_muelle') && (
-              <button onClick={() => setActiveTab('historial_muelle')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button onClick={() => { setActiveTab('historial_muelle'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'historial_muelle' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <ClipboardList className="w-4 h-4" /> Historial de Muelle
               </button>
             )}
             {hasAccess('movements') && (
-              <button onClick={() => setActiveTab('movements')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button onClick={() => { setActiveTab('movements'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'movements' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <ArrowLeftRight className="w-4 h-4" /> Entradas y Salidas
               </button>
             )}
             {hasAccess('encoder') && (
-              <button onClick={() => setActiveTab('encoder')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button onClick={() => { setActiveTab('encoder'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'encoder' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <Printer className="w-4 h-4" /> Grabación / Impresión Tag
               </button>
             )}
             {(hasAccess('discrepancies') || currentUser.roleKey === 'admin') && (
-              <button onClick={() => setActiveTab('discrepancies')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'discrepancies' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button onClick={() => { setActiveTab('discrepancies'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'discrepancies' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <AlertTriangle className="w-4 h-4" /> Discrepancias & Historial
               </button>
             )}
             {hasAccess('reports') && (
-              <button onClick={() => setActiveTab('reports')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
+              <button onClick={() => { setActiveTab('reports'); setMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs ${activeTab === 'reports' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:bg-slate-800'}`}>
                 <BarChart3 className="w-4 h-4" /> Reportes & Analítica
               </button>
             )}
@@ -487,19 +747,30 @@ export default function ZonikaApp() {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120]">
-        <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 z-20">
-          <span className="flex items-center gap-2 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Servidor Middleware Activo
-          </span>
+        <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            {/* Botón de Menú Hamburguesa para móviles y Chainway C72 */}
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded-xl transition-all"
+              title="Abrir Menú"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
 
-          <button onClick={() => { setIsReading(!isReading); showNotification(!isReading ? '📡 Escaneo RFID activo...' : '⏹️ Escaneo detenido.'); }} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg ${isReading ? 'bg-amber-500 text-slate-950 animate-pulse' : 'bg-emerald-500 text-slate-950'}`}>
+            <span className="hidden sm:flex items-center gap-2 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Servidor Middleware Activo
+            </span>
+          </div>
+
+          <button onClick={() => { setIsReading(!isReading); showNotification(!isReading ? '📡 Escaneo RFID activo...' : '⏹️ Escaneo detenido.'); }} className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all shadow-lg ${isReading ? 'bg-amber-500 text-slate-950 animate-pulse' : 'bg-emerald-500 text-slate-950'}`}>
             {isReading ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-            {isReading ? 'DETENER ESCANEO' : 'INICIAR CONTEO RFID'}
+            <span className="hidden xs:inline">{isReading ? 'DETENER ESCANEO' : 'INICIAR CONTEO RFID'}</span>
+            <span className="xs:hidden">{isReading ? 'DETENER' : 'ESCANEAR'}</span>
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8">
-          {/* Enrutador de Vistas Modulares */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8">
           {activeTab === 'dashboard' && (
             <DashboardView 
               totalStockMadefront={totalStockMadefront}
@@ -524,11 +795,15 @@ export default function ZonikaApp() {
               selectedCategory={selectedCategory}
               setSelectedCategory={setSelectedCategory}
               onDeleteProduct={initiateDeleteProduct}
+              onTransferProduct={initiateTransfer}
+              onOpenTraceability={openTraceability}
+              onRecodeProduct={openRecodeModal}
+              showNotification={showNotification}
             />
           )}
 
           {activeTab === 'add-product' && (
-            <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-8 rounded-2xl shadow-xl">
+            <div className="space-y-6 max-w-2xl mx-auto bg-[#1E293B] border border-slate-700/60 p-6 sm:p-8 rounded-2xl shadow-xl">
               <div className="flex justify-between items-center border-b border-slate-700/80 pb-3">
                 <h2 className="text-xl font-black text-white uppercase tracking-wider">Registrar Nuevo Producto</h2>
                 <span className="text-xs bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full font-bold">
@@ -557,9 +832,15 @@ export default function ZonikaApp() {
                     <option value="Insumos">Insumos</option>
                   </select>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Stock Inicial</label>
-                  <input type="number" placeholder="Cantidad..." value={newProduct.stock} onChange={(e)=>setNewProduct({...newProduct, stock: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500" required />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Stock Inicial</label>
+                    <input type="number" placeholder="Cantidad..." value={newProduct.stock} onChange={(e)=>setNewProduct({...newProduct, stock: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500" required />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Umbral Stock Mínimo</label>
+                    <input type="number" placeholder="Mínimo..." value={newProduct.minStock} onChange={(e)=>setNewProduct({...newProduct, minStock: e.target.value})} className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500" required />
+                  </div>
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="submit" className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs py-3.5 rounded-xl uppercase tracking-wider">Guardar Producto</button>
