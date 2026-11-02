@@ -429,7 +429,7 @@ export default function ZonikaApp() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans relative">
+    <div className="flex min-h-[100dvh] w-full bg-[#0B1120] text-slate-100 font-sans relative overflow-x-hidden">
       {notification && (
         <div className="fixed top-5 right-5 z-50 bg-cyan-500 text-slate-950 font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-cyan-300 animate-bounce">
           <CheckCircle2 className="w-5 h-5" />
@@ -674,11 +674,11 @@ export default function ZonikaApp() {
         ></div>
       )}
 
-      {/* Sidebar Responsive (Drawer móvil con offset superior seguro y pointer-events condicional para evitar bloqueo de clics) */}
+      {/* Sidebar Responsive (Drawer móvil con altura flexible y scroll interno) */}
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50 w-64 bg-[#0F172A] border-r border-slate-800 
         flex flex-col justify-between p-4 shrink-0 transition-transform duration-300 ease-in-out
-        pt-16 md:pt-4
+        pt-16 md:pt-4 overflow-y-auto
         ${mobileMenuOpen ? 'translate-x-0 pointer-events-auto shadow-2xl' : '-translate-x-full pointer-events-none md:pointer-events-auto md:translate-x-0'}
       `}>
         <div>
@@ -775,13 +775,13 @@ export default function ZonikaApp() {
             )}
           </nav>
         </div>
-        <button type="button" onClick={handleLogout} className="text-red-400 text-xs font-bold flex items-center gap-2 p-2 hover:bg-slate-800 rounded-xl transition-colors">
+        <button type="button" onClick={handleLogout} className="text-red-400 text-xs font-bold flex items-center gap-2 p-2 hover:bg-slate-800 rounded-xl transition-colors mt-4">
           <LogOut className="w-4 h-4" /> Cerrar Sesión
         </button>
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-[#0B1120] min-h-[100dvh]">
-        <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-4 sm:px-8 shrink-0 z-20">
+        <header className="h-16 bg-[#0F172A] border-b border-slate-800 flex items-center justify-between px-4 sm:px-8 shrink-0 z-20 sticky top-0">
           <div className="flex items-center gap-3">
             {/* Botón de Menú Hamburguesa para móviles y iPhone */}
             <button 
@@ -809,7 +809,7 @@ export default function ZonikaApp() {
           </button>
         </header>
 
-        <div className="flex-1 p-4 sm:p-8">
+        <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
           {activeTab === 'dashboard' && (
             <DashboardView 
               totalStockMadefront={totalStockMadefront}
