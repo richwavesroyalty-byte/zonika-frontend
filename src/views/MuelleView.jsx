@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Truck, Radio, Play, Square, CheckCircle2, AlertTriangle, RefreshCw, X, ShieldAlert } from 'lucide-react';
+import { Truck, Radio, Play, Square, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
 
-export default function MuelleView({
-  muelleForm,
-  setMuelleForm,
-  handleRegisterTruckEntry,
+export default function MuelleView({ 
+  muelleForm, 
+  setMuelleForm, 
+  handleRegisterTruckEntry, 
   onReportDiscrepancy,
-  showNotification
+  showNotification 
 }) {
   const [muelleReading, setMuelleReading] = useState(false);
   const [muelleItems, setMuelleItems] = useState([
@@ -14,12 +14,6 @@ export default function MuelleView({
     { id: 2, sku: 'INV-002', name: 'Cámara IP Domo 4K', expected: 20, read: 20, status: 'Completado' },
     { id: 3, sku: 'INV-003', name: 'Etiqueta RFID UHF Zebra', expected: 500, read: 500, status: 'Completado' },
   ]);
-
-  // Estado para el Modal de Discrepancias en Muelle
-  const [discModalOpen, setDiscModalOpen] = useState(false);
-  const [selectedItemForDisc, setSelectedItemForDisc] = useState(null);
-  const [discReason, setDiscReason] = useState('Faltante físico en entrega');
-  const [discDescription, setDiscDescription] = useState('');
 
   const handleSimulateAntennaRead = () => {
     setMuelleReading(!muelleReading);
@@ -34,158 +28,98 @@ export default function MuelleView({
     }
   };
 
-  const openDiscModal = (item) => {
-    setSelectedItemForDisc(item);
-    setDiscReason('Faltante físico en entrega');
-    setDiscDescription('');
-    setDiscModalOpen(true);
-  };
-
-  const submitDiscrepancyReport = (e) => {
-    e.preventDefault();
-    if (!selectedItemForDisc) return;
-
-    if (onReportDiscrepancy) {
+  const handleReportClick = (item) => {
+    if (typeof onReportDiscrepancy === 'function') {
       onReportDiscrepancy({
-        ...selectedItemForDisc,
-        ordenCompra: muelleForm.ordenCompra,
-        placaCamion: muelleForm.placaCamion,
-        reason: discReason,
-        description: discDescription
+        sku: item.sku,
+        name: item.name,
+        expected: item.expected,
+        read: item.read,
+        ordenCompra: muelleForm.ordenCompra || 'PO-General',
+        placaCamion: muelleForm.placaCamion || 'SGT-000',
+        reason: 'Diferencia detectada en recepción de muelle',
+        description: `Se esperaban ${item.expected} unidades y la antena registró ${item.read} unidades.`
       });
     }
 
-    setDiscModalOpen(false);
-    setSelectedItemForDisc(null);
+    setMuelleItems(prev => prev.filter(i => i.id !== item.id));
+
+    if (showNotification) {
+      showNotification(`⚠️ SKU ${item.sku} reportado y movido a Discrepancias.`);
+    }
+  };
+
+  const onSubmitForm = (e) => {
+    e.preventDefault();
+    if (typeof handleRegisterTruckEntry === 'function') {
+      handleRegisterTruckEntry(e, muelleItems);
+    }
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12 relative">
-      {/* Modal de Reporte de Discrepancia en Muelle */}
-      {discModalOpen && selectedItemForDisc && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scaleIn">
-            <div className="flex justify-between items-center border-b border-slate-700 pb-3">
-              <div className="flex items-center gap-2 text-amber-400">
-                <ShieldAlert className="w-5 h-5" />
-                <h3 className="text-sm font-black uppercase tracking-wider text-white">Reportar Discrepancia de Muelle</h3>
-              </div>
-              <button onClick={() => setDiscModalOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="bg-[#0F172A] border border-slate-800 p-3 rounded-xl text-xs space-y-1">
-              <p className="text-slate-400">Artículo con diferencia:</p>
-              <p className="font-bold text-white text-sm">{selectedItemForDisc.name} <span className="text-cyan-400 font-mono">({selectedItemForDisc.sku})</span></p>
-              <p className="text-[10px] text-slate-400">Esperado: <strong className="text-white">{selectedItemForDisc.expected} un</strong> | Leído RFID: <strong className="text-amber-400">{selectedItemForDisc.read} un</strong> (Faltante: {selectedItemForDisc.read - selectedItemForDisc.expected} un)</p>
-            </div>
-
-            <form onSubmit={submitDiscrepancyReport} className="space-y-3">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Motivo de Discrepancia</label>
-                <select 
-                  value={discReason} 
-                  onChange={(e) => setDiscReason(e.target.value)}
-                  className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-amber-500 cursor-pointer"
-                >
-                  <option value="Faltante físico en entrega">Faltante físico en entrega</option>
-                  <option value="Caja dañada / Merma en tránsito">Caja dañada / Merma en tránsito</option>
-                  <option value="Tag RFID ilegible / ausente">Tag RFID ilegible / ausente</option>
-                  <option value="Excedente de mercancía">Excedente de mercancía</option>
-                  <option value="Error en Orden de Compra">Error en Orden de Compra</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Descripción y Observaciones</label>
-                <textarea 
-                  rows="3"
-                  placeholder="Detalle el estado del cargamento, número de precinto o novedad del transportador..."
-                  value={discDescription}
-                  onChange={(e) => setDiscDescription(e.target.value)}
-                  className="w-full bg-[#0F172A] border border-slate-700 p-2.5 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
-                  required
-                ></textarea>
-              </div>
-
-              <div className="bg-cyan-500/10 border border-cyan-500/30 p-2.5 rounded-xl text-[10px] text-cyan-300 font-medium flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-cyan-400 mt-0.5" />
-                <span>Este reporte se enlazará automáticamente al módulo de Discrepancias & Historial para la auditoría gerencial.</span>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button type="submit" className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs py-3 rounded-xl uppercase tracking-wider transition-all shadow-lg">
-                  Registrar Discrepancia
-                </button>
-                <button type="button" onClick={() => setDiscModalOpen(false)} className="bg-slate-800 text-slate-300 font-bold text-xs px-5 py-3 rounded-xl hover:bg-slate-700">
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
+    <div className="space-y-8 max-w-6xl mx-auto pb-12">
       <div>
         <h2 className="text-2xl font-black text-white tracking-tight">Muelle de Carga & Despacho — Recepción de Camiones</h2>
         <p className="text-slate-400 text-xs mt-1 font-medium">Registro de ingresos de transporte, órdenes de compra y validación masiva de mercancía mediante antenas RFID fijas.</p>
       </div>
 
-      {/* Formulario de Registro de Transporte */}
-      <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
-        <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
-          <Truck className="w-5 h-5 text-cyan-400" />
+      {/* FORMULARIO DE TRANSPORTE - ESTILO BLACK OLED */}
+      <div className="bg-[#05070E] border-2 border-cyan-400/50 p-6 rounded-3xl shadow-[0_0_30px_rgba(0,240,255,0.15)] space-y-4">
+        <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+          <Truck className="w-5 h-5 text-[#00f0ff]" />
           <h3 className="text-xs font-bold text-white uppercase tracking-wider">Datos del Proveedor y Logística de Transporte</h3>
         </div>
 
-        <form onSubmit={handleRegisterTruckEntry} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Orden de Compra (PO)</label>
-            <input 
-              type="text" 
-              placeholder="Ej. PO-44102" 
-              value={muelleForm.ordenCompra} 
-              onChange={(e)=>setMuelleForm({...muelleForm, ordenCompra: e.target.value})} 
-              className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono" 
-              required 
-            />
+        <form onSubmit={onSubmitForm} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Orden de Compra (PO)</label>
+              <input 
+                type="text" 
+                placeholder="Ej. PO-44102"
+                value={muelleForm.ordenCompra}
+                onChange={(e) => setMuelleForm({...muelleForm, ordenCompra: e.target.value})}
+                className="w-full bg-[#020408] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#00f0ff] font-mono"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Placa del Camión</label>
+              <input 
+                type="text" 
+                placeholder="Ej. SGT-881"
+                value={muelleForm.placaCamion}
+                onChange={(e) => setMuelleForm({...muelleForm, placaCamion: e.target.value})}
+                className="w-full bg-[#020408] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#00f0ff] font-mono"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Transportadora</label>
+              <input 
+                type="text" 
+                placeholder="Ej. TCC Carga"
+                value={muelleForm.transportadora}
+                onChange={(e) => setMuelleForm({...muelleForm, transportadora: e.target.value})}
+                className="w-full bg-[#020408] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#00f0ff]"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Proveedor / Remitente</label>
+              <input 
+                type="text" 
+                placeholder="Ej. Ferretería Mayorista SAS"
+                value={muelleForm.proveedor}
+                onChange={(e) => setMuelleForm({...muelleForm, proveedor: e.target.value})}
+                className="w-full bg-[#020408] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#00f0ff]"
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Placa del Camión</label>
-            <input 
-              type="text" 
-              placeholder="Ej. SGT-881" 
-              value={muelleForm.placaCamion} 
-              onChange={(e)=>setMuelleForm({...muelleForm, placaCamion: e.target.value})} 
-              className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500 font-bold font-mono" 
-              required 
-            />
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Transportadora</label>
-            <input 
-              type="text" 
-              placeholder="Ej. TCC Carga" 
-              value={muelleForm.transportadora} 
-              onChange={(e)=>setMuelleForm({...muelleForm, transportadora: e.target.value})} 
-              className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500" 
-            />
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Proveedor / Remitente</label>
-            <input 
-              type="text" 
-              placeholder="Ej. Ferretería Mayorista SAS" 
-              value={muelleForm.proveedor} 
-              onChange={(e)=>setMuelleForm({...muelleForm, proveedor: e.target.value})} 
-              className="w-full bg-[#0F172A] border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-cyan-500" 
-            />
-          </div>
-          <div className="md:col-span-4 flex justify-end pt-2">
+
+          <div className="flex justify-end pt-2">
             <button 
-              type="submit" 
-              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs px-6 py-3.5 rounded-xl shadow-lg uppercase tracking-wider transition-all"
+              type="submit"
+              className="w-full sm:w-auto bg-[#00f0ff] hover:bg-cyan-300 text-black font-black text-xs px-6 py-3 rounded-xl uppercase tracking-wider shadow-[0_0_20px_rgba(0,240,255,0.6)] transition-all"
             >
               Confirmar Ingreso de Mercancía al Stock Central
             </button>
@@ -193,20 +127,20 @@ export default function MuelleView({
         </form>
       </div>
 
-      {/* Monitor en Vivo de Recepción en Muelle por Antena RFID */}
-      <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700/80 pb-3">
+      {/* MONITOR EN VIVO */}
+      <div className="bg-[#05070E] border-2 border-slate-800/90 p-6 rounded-3xl shadow-xl space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-3">
           <div className="flex items-center gap-3">
-            <Radio className={`w-5 h-5 text-cyan-400 ${muelleReading ? 'animate-pulse' : ''}`} />
+            <Radio className={`w-5 h-5 text-[#00f0ff] ${muelleReading ? 'animate-pulse' : ''}`} />
             <div>
               <h3 className="text-xs font-bold text-white uppercase tracking-wider">Antena RFID Zonal (Puerta de Muelle Principal)</h3>
               <p className="text-[10px] text-slate-400">Escaneo de palets y cajas al cruzar el portal de recepción</p>
             </div>
           </div>
           <button 
-            type="button"
+            type="button" 
             onClick={handleSimulateAntennaRead}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md ${muelleReading ? 'bg-amber-500 text-slate-950 animate-pulse' : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md ${muelleReading ? 'bg-amber-400 text-slate-950 animate-pulse shadow-[0_0_20px_rgba(251,191,36,0.6)]' : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]'}`}
           >
             {muelleReading ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
             {muelleReading ? 'Detener Antena Muelle' : 'Iniciar Escaneo RFID Muelle'}
@@ -216,7 +150,7 @@ export default function MuelleView({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-900/30">
+              <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider bg-[#020408]">
                 <th className="py-3 px-4">SKU</th>
                 <th className="py-3 px-4">Artículo</th>
                 <th className="py-3 px-4 text-center">Esperado (PO)</th>
@@ -225,12 +159,11 @@ export default function MuelleView({
                 <th className="py-3 px-4 text-center">Acción / Auditoría</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 text-slate-200">
-              {muelleItems.map((item) => {
-                const hasDiscrepancy = item.read < item.expected;
-                return (
-                  <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{item.sku}</td>
+            <tbody className="divide-y divide-slate-800/80 text-slate-200">
+              {muelleItems.length > 0 ? (
+                muelleItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-[#020408]/60 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-[#00f0ff]">{item.sku}</td>
                     <td className="py-3.5 px-4 font-semibold text-white">{item.name}</td>
                     <td className="py-3.5 px-4 text-center font-bold">{item.expected} un</td>
                     <td className="py-3.5 px-4 text-center font-mono font-bold text-emerald-400">{item.read} un</td>
@@ -240,20 +173,23 @@ export default function MuelleView({
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-center">
-                      {hasDiscrepancy ? (
-                        <button 
-                          onClick={() => openDiscModal(item)}
-                          className="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 rounded-xl text-[10px] font-bold transition-all flex items-center gap-1.5 mx-auto"
-                        >
-                          <AlertTriangle className="w-3.5 h-3.5" /> Reportar Discrepancia
-                        </button>
-                      ) : (
-                        <span className="text-[10px] text-slate-500 font-medium">Sin novedad</span>
-                      )}
+                      <button 
+                        type="button"
+                        onClick={() => handleReportClick(item)}
+                        className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl font-bold text-[10px] transition-all shadow-[0_0_10px_rgba(245,158,11,0.15)] flex items-center gap-1.5 mx-auto"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5" /> Reportar Discrepancia
+                      </button>
                     </td>
                   </tr>
-                );
-              })}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-slate-400 text-xs font-medium">
+                    ✨ Todos los ítems del muelle han sido verificados o reportados. No hay pendientes.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

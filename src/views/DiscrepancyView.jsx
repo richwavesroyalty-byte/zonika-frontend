@@ -19,9 +19,9 @@ export default function DiscrepancyView({ discrepancies = [], deletedHistory = [
       </div>
 
       {/* Tabla de Discrepancias Activas */}
-      <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
-        <div className="flex items-center gap-3 border-b border-slate-700/80 pb-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+      <div className="bg-[#05070E] border-2 border-slate-800/90 p-6 rounded-3xl shadow-xl space-y-4">
+        <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
             <AlertTriangle className="w-4 h-4" />
           </div>
           <div>
@@ -33,7 +33,7 @@ export default function DiscrepancyView({ discrepancies = [], deletedHistory = [
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-900/40">
+              <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider bg-[#020408]">
                 <th className="py-3 px-4">ID Discrepancia</th>
                 <th className="py-3 px-4">SKU / Ítem</th>
                 <th className="py-3 px-4 text-center">Esperado</th>
@@ -43,10 +43,10 @@ export default function DiscrepancyView({ discrepancies = [], deletedHistory = [
                 <th className="py-3 px-4">Causa Estimada</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 text-slate-200">
+            <tbody className="divide-y divide-slate-800/80 text-slate-200">
               {discrepancies.length > 0 ? (
                 discrepancies.map((d, i) => (
-                  <tr key={i} className="hover:bg-slate-800/55 transition-colors">
+                  <tr key={i} className="hover:bg-[#020408]/60 transition-colors">
                     <td className="py-3.5 px-4 font-mono font-bold text-amber-400">{d.id}</td>
                     <td className="py-3.5 px-4 font-semibold text-white">{d.item} <span className="text-[10px] text-slate-400 font-mono">({d.sku})</span></td>
                     <td className="py-3.5 px-4 text-center font-bold">{d.expected} un</td>
@@ -67,10 +67,10 @@ export default function DiscrepancyView({ discrepancies = [], deletedHistory = [
       </div>
 
       {/* Historial Permanente e Inalterable de Productos Eliminados */}
-      <div className="bg-[#1E293B] border border-slate-700/60 p-6 rounded-2xl shadow-xl space-y-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700/80 pb-3">
+      <div className="bg-[#05070E] border-2 border-slate-800/90 p-6 rounded-3xl shadow-xl space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+            <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div>
@@ -86,7 +86,7 @@ export default function DiscrepancyView({ discrepancies = [], deletedHistory = [
               placeholder="Buscar en historial de bajas..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#0F172A] border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+              className="w-full bg-[#020408] border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
             />
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function DiscrepancyView({ discrepancies = [], deletedHistory = [
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-900/40">
+              <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider bg-[#020408]">
                 <th className="py-3 px-4">ID Registro</th>
                 <th className="py-3 px-4">SKU / Producto</th>
                 <th className="py-3 px-4">Motivo de Baja</th>
@@ -104,10 +104,10 @@ export default function DiscrepancyView({ discrepancies = [], deletedHistory = [
                 <th className="py-3 px-4">Fecha y Hora</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 text-slate-200">
+            <tbody className="divide-y divide-slate-800/80 text-slate-200">
               {filteredDeletions.length > 0 ? (
                 filteredDeletions.map((del) => (
-                  <tr key={del.id} className="hover:bg-slate-800/55 transition-colors">
+                  <tr key={del.id} className="hover:bg-[#020408]/60 transition-colors">
                     <td className="py-3.5 px-4 font-mono font-bold text-rose-400">{del.id}</td>
                     <td className="py-3.5 px-4 font-semibold text-white">
                       {del.name} <span className="text-[10px] text-cyan-400 font-mono block">SKU: {del.sku}</span>
